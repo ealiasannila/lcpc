@@ -10,18 +10,28 @@
 #include <deque>
 #include "Coords.h"
 #include "Edge.h"
+#include <string>
+#include <vector>
+
 
 class Funnel {
 private:
-	Coords* apex;
-	std::deque<Coords*> sides;
+	std::deque<Coords*> lc;
+	std::deque<Coords*> rc;
+	void shrink(Coords* o, std::deque<Coords*>* chain, unsigned lastRemaining);
+	int inFirstSector(Coords* o);
+	int findInChain(Coords* o, std::deque<Coords*> chain, int side);
 
 public:
 	Funnel(Coords* l, Coords* a, Coords* r);
+	Funnel(std::deque<Coords*> lc, std::deque<Coords*> rc);
 	Edge getBase();
-	void addR(Coords* c);
-	void addL(Coords* c);
-	Coords* getApex(){return apex;}
+	Funnel split(Coords* o);
+	void reactToOpposite(Coords* o);
+	std::deque<Coords*> getLC();
+	std::deque<Coords*> getRC();
+	std::string toString();
+	Coords* getApex(){return lc.front();}
 	virtual ~Funnel();
 };
 

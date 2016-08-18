@@ -11,7 +11,6 @@
 #include <iostream>
 #include "../Edge.h"
 #include "../Funnel.h"
-#include "../helperfunctions.hpp"
 #include "funneltest.h"
 #include "basictest.h"
 

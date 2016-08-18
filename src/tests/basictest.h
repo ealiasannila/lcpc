@@ -7,6 +7,7 @@
 
 #ifndef TESTS_BASICTEST_H_
 #define TESTS_BASICTEST_H_
+#include <math.h>
 
 int testCoords() {
 	Coords c(2.0, 1.0);
@@ -36,13 +37,13 @@ int testDist() {
 	Coords c2(2.0, 2.0);
 	Coords c3(0.0, 1.0);
 
-	if (eucDist(c1, c3) != 1 or eucDist(c3, c1) != 1) {
+	if (c1.eucDist(&c3) != 1 or c3.eucDist(&c1) != 1) {
 		return 1;
 	}
-	if (eucDist(c1, c2) != sqrt(8) or eucDist(c2, c1) != sqrt(8)) {
+	if (c1.eucDist(&c2) != sqrt(8) or c2.eucDist(&c1) != sqrt(8)) {
 		return 2;
 	}
-	if (eucDist(c3, c3) != 0) {
+	if (c3.eucDist(&c3) != 0) {
 		return 2;
 	}
 	return 0;
@@ -55,27 +56,27 @@ int testIsRight() {
 	Coords c3(1.0, 0.0);
 	Coords c4(-1, -1);
 
-	if (isRight(c1, c2, c3) != 1) {
-		std::cout << "isRight(c1, c2, c3)-->" << isRight(c1, c2, c3)
+	if (c3.isRight(&c1, &c2) != 1) {
+		std::cout << "isRight(c1, c2, c3)-->" << c3.isRight(&c1, &c2)
 				<< std::endl;
 		return 1;
 	}
-	if (isRight(c2, c1, c3) != -1) {
+	if (c3.isRight(&c2, &c1) != -1) {
 		return 2;
 	}
-	if (isRight(c1, c2, c2) != 0) {
+	if (c2.isRight(&c1, &c2) != 0) {
 		return 3;
 	}
-	if (isRight(c1, c2, c1) != 0) {
+	if (c1.isRight(&c1, &c2) != 0) {
 		return 4;
 	}
-	if (isRight(c2, c2, c2) != 0) {
+	if (c2.isRight(&c2, &c2) != 0) {
 		return 5;
 	}
-	if (isRight(c1, c2, c4) != 0) {
+	if (c4.isRight(&c1, &c2) != 0) {
 		return 6;
 	}
-	if (isRight(c4, c1, c2) != 0) {
+	if (c2.isRight(&c4, &c1) != 0) {
 		return 7;
 	}
 	return 0;
