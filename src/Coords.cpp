@@ -17,16 +17,24 @@ Coords::Coords(){
 	x = -1;
 	y = -1;
 }
-std::vector<Coords*>::iterator Coords::getLeftNeighbours(){
-	return leftNeighbours;
+std::set<Coords*>::iterator Coords::getLeftNeighbours(){
+	return leftNeighbours.begin();
 }
-std::vector<Coords*>::iterator Coords::getLeftNeighbours(){
-	return rightNeighbours;
+
+std::set<Coords*>::iterator Coords::getRightNeighbours(){
+	return rightNeighbours.begin();
+}
+std::set<Coords*>::iterator Coords::getLeftNeighboursEnd(){
+	return leftNeighbours.end();
+}
+
+std::set<Coords*>::iterator Coords::getRightNeighboursEnd(){
+	return rightNeighbours.end();
 }
 
 void Coords::addNeighbours(Coords* l, Coords* r){
-	leftNeighbours.push_back(l);
-	rightNeighbours.push_back(r);
+	leftNeighbours.insert(l);
+	rightNeighbours.insert(r);
 }
 
 std::string Coords::toString(){
