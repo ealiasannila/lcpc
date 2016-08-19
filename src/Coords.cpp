@@ -13,6 +13,21 @@ Coords::Coords(double newx, double newy) {
 	x = newx;
 	y = newy;
 }
+Coords::Coords(){
+	x = -1;
+	y = -1;
+}
+std::vector<Coords*>::iterator Coords::getLeftNeighbours(){
+	return leftNeighbours;
+}
+std::vector<Coords*>::iterator Coords::getLeftNeighbours(){
+	return rightNeighbours;
+}
+
+void Coords::addNeighbours(Coords* l, Coords* r){
+	leftNeighbours.push_back(l);
+	rightNeighbours.push_back(r);
+}
 
 std::string Coords::toString(){
 	std::stringstream sstm;

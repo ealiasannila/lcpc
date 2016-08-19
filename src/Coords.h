@@ -8,18 +8,25 @@
 #ifndef COORDS_H_
 #define COORDS_H_
 #include <string>
-
+#include <vector>
 class Coords {
 private:
+	std::vector<Coords*> leftNeighbours;
+	std::vector<Coords*> rightNeighbours;
+
 	double x;
 	double y;
 public:
+	Coords();
 	Coords(double x, double y);
 	double getX(){return x;}
 	double getY(){return y;}
 	int isRight(Coords* c1, Coords* c2);
 	double eucDist(Coords* c1);
 	double eucDistSquared(Coords* c1);
+	std::vector<Coords*>::iterator getLeftNeighbours();
+	std::vector<Coords*>::iterator getRightNeighbours();
+	void addNeighbours(Coords* l, Coords* r);
 	std::string toString();
 	virtual ~Coords();
 };
