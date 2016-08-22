@@ -21,8 +21,8 @@ Funnel::Funnel(std::deque<Coords*> lc, std::deque<Coords*> rc) {
 }
 
 //TODO varaudu jos deque on tyhjä tai jos törmää apexiin?
-Edge Funnel::getBase() {
-	return Edge(lc.back(), rc.back());
+std::pair<Coords*, Coords*> Funnel::getBase() {
+	return std::pair<Coords*,Coords* >(lc.back(), rc.back());
 }
 std::deque<Coords*> Funnel::getLC() {
 	return lc;
@@ -111,14 +111,16 @@ int Funnel::inFirstSector(Coords* o) {
  *  2. shrinks either chain
  *  3. expands either chain
  */
-void Funnel::reactToOpposite(Coords* o) {
+void Funnel::reactToOpposite(Coords* o, std::deque<Funnel>* funnelQueue, std::vector<Coords*>* neighbours) {
 	switch (this->inFirstSector(o)) {
 	int lastRemaining;
 	case 0:
 		std::cout<<"splitting"<<std::endl;
-		this->split(o);
+		funnelQueue->push_back(this->split(o));
+		neighbours->push_back(o);
+
 		//TODO Add the split funnels to handling queue - Ehkä pakita siihen että palauttaa numerokoodin ja kutsuja tekee sen perusteella juttuja
-		// toinen vaihtis olis että palauttaa aina listan funneleita, eli joko vain itsensä, tai sitten 2 uutta.
+		// toinen vaihtis olis että palauttaa aina listan funneleita, eli joko vain itsensä, tai sitten 2 uutta. Tai pointteri quehen...
 		break;
 	case -1:
 		lastRemaining = this->findInChain(o, lc, 1);

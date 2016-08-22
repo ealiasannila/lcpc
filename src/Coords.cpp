@@ -13,28 +13,38 @@ Coords::Coords(double newx, double newy) {
 	x = newx;
 	y = newy;
 }
+
+Coords::Coords(double newx, double newy, int polygon) {
+	x = newx;
+	y = newy;
+	this->leftNeighbours.insert(std::pair<int, std::set<Coords*>>(polygon, std::set<Coords*>()));
+	this->rightNeighbours.insert(std::pair<int, std::set<Coords*>>(polygon, std::set<Coords*>()));
+}
+
 Coords::Coords(){
 	x = -1;
 	y = -1;
 }
-std::set<Coords*>::iterator Coords::getLeftNeighbours(){
-	return leftNeighbours.begin();
+
+std::pair<std::set<Coords*>::iterator,std::set<Coords*>::iterator> Coords::getRightNeighbours(int polygon){
+	return std::pair<std::set<Coords*>::iterator,std::set<Coords*>::iterator>(this->rightNeighbours.at(polygon).begin(),this->rightNeighbours.at(polygon).end())  ;
+}
+std::pair<std::set<Coords*>::iterator,std::set<Coords*>::iterator> Coords::getLeftNeighbours(int polygon){
+	return std::pair<std::set<Coords*>::iterator,std::set<Coords*>::iterator>(this->leftNeighbours.at(polygon).begin(),this->leftNeighbours.at(polygon).end())  ;
 }
 
-std::set<Coords*>::iterator Coords::getRightNeighbours(){
-	return rightNeighbours.begin();
-}
-std::set<Coords*>::iterator Coords::getLeftNeighboursEnd(){
-	return leftNeighbours.end();
+std::pair<std::map<int,std::set<Coords*>>::iterator,std::map<int,std::set<Coords*>>::iterator> Coords::belongsToPolygons(){
+	return std::pair<std::map<int,std::set<Coords*>>::iterator,std::map<int,std::set<Coords*>>::iterator>(this->leftNeighbours.begin(),this->leftNeighbours.end());
 }
 
-std::set<Coords*>::iterator Coords::getRightNeighboursEnd(){
-	return rightNeighbours.end();
+void Coords::addToPolygon(int polygon){
+	this->leftNeighbours.insert(std::pair<int, std::set<Coords*>>(polygon, std::set<Coords*>()));
+	this->rightNeighbours.insert(std::pair<int, std::set<Coords*>>(polygon, std::set<Coords*>()));
 }
 
-void Coords::addNeighbours(Coords* l, Coords* r){
-	leftNeighbours.insert(l);
-	rightNeighbours.insert(r);
+void Coords::addNeighbours(Coords* l, Coords* r, int polygon){
+	leftNeighbours.at(polygon).insert(l);
+	rightNeighbours.at(polygon).insert(r);
 }
 
 std::string Coords::toString(){

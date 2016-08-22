@@ -9,7 +9,6 @@
 
 #include <deque>
 #include "Coords.h"
-#include "Edge.h"
 #include <string>
 #include <vector>
 
@@ -25,9 +24,9 @@ private:
 public:
 	Funnel(Coords* l, Coords* a, Coords* r);
 	Funnel(std::deque<Coords*> lc, std::deque<Coords*> rc);
-	Edge getBase();
+	std::pair<Coords*, Coords*> getBase();
 	Funnel split(Coords* o);
-	void reactToOpposite(Coords* o);
+	void reactToOpposite(Coords* o, std::deque<Funnel>* funnelQueue, std::vector<Coords*>* neighbours);
 	std::deque<Coords*> getLC();
 	std::deque<Coords*> getRC();
 	std::string toString();
