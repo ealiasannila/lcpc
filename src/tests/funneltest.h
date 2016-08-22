@@ -23,7 +23,7 @@ int funnelBasicTest() {
 	Coords cr(1.0, 0.0);
 	Funnel fun(&cl, &ca, &cr);
 
-	Edge base = fun.getBase();
+	std::pair<Coords*, Coords*> base = fun.getBase();
 	Coords* apex = fun.getApex();
 
 	if (apex != &ca) {
@@ -34,10 +34,10 @@ int funnelBasicTest() {
 		return 1;
 	}
 
-	if (base.getL() != &cl) {
+	if (base.first != &cl) {
 		return 2;
 	}
-	if (base.getR() != &cr) {
+	if (base.second != &cr) {
 		return 3;
 	}
 
@@ -51,14 +51,15 @@ int funnelBaseTest() {
 	Coords cl2(0.4, 2.0);
 	Coords cr1(1.0, 0.5);
 	Coords cr2(2.0, 0.4);
-
+	std::deque<Funnel> fq { };
+	std::vector<Coords*> n { };
 	Funnel fun(&cl1, &ca, &cr1);
-	fun.reactToOpposite(&cl2);
-	if (fun.getBase().getL() != &cl2 or fun.getBase().getR() != &cr1) {
+	fun.reactToOpposite(&cl2, &fq, &n);
+	if (fun.getBase().first != &cl2 or fun.getBase().second != &cr1) {
 		return 1;
 	}
-	fun.reactToOpposite(&cr2);
-	if (fun.getBase().getL() != &cl2 or fun.getBase().getR() != &cr2) {
+	fun.reactToOpposite(&cr2, &fq, &n);
+	if (fun.getBase().first != &cl2 or fun.getBase().second != &cr2) {
 		return 2;
 	}
 	return 0;
@@ -66,6 +67,9 @@ int funnelBaseTest() {
 }
 
 int funnelGetChannelsTest() {
+	std::deque<Funnel> fq { };
+	std::vector<Coords*> n { };
+
 	Coords ca(0.0, 0.0);
 	Coords cl1(0.5, 1.0);
 	Coords cl2(0.4, 2.0);
@@ -74,11 +78,11 @@ int funnelGetChannelsTest() {
 	Coords s(3, 3);
 
 	Funnel fun(&cl1, &ca, &cr1);
-	fun.reactToOpposite(&cl2);
-	fun.reactToOpposite(&cr2);
+	fun.reactToOpposite(&cl2, &fq, &n);
+	fun.reactToOpposite(&cr2, &fq, &n);
 	std::deque<Coords*> funlc = fun.getLC();
 	std::deque<Coords*> funrc = fun.getRC();
-	if (funlc[0] != & ca or funlc[1] != &cl1 or funlc[2] != &cl2) {
+	if (funlc[0] != &ca or funlc[1] != &cl1 or funlc[2] != &cl2) {
 		printChain(funlc);
 		std::cout << "Left channel is not right" << std::endl;
 		return 1;
@@ -92,6 +96,11 @@ int funnelGetChannelsTest() {
 }
 
 int funnelSplitTest() {
+
+
+	std::deque<Funnel> fq { };
+	std::vector<Coords*> n { };
+
 	Coords ca(0.0, 0.0);
 	Coords cl1(0.5, 1.0);
 	Coords cl2(0.4, 2.0);
@@ -100,8 +109,8 @@ int funnelSplitTest() {
 	Coords s(3, 3);
 
 	Funnel fun(&cl1, &ca, &cr1);
-	fun.reactToOpposite(&cl2);
-	fun.reactToOpposite(&cr2);
+	fun.reactToOpposite(&cl2, &fq, &n);
+	fun.reactToOpposite(&cr2, &fq, &n);
 	Funnel f = fun.split(&s);
 	/*std::cout << "--FUN:--" << std::endl;
 	 std::cout << fun.toString() << std::endl;
@@ -115,7 +124,8 @@ int funnelSplitTest() {
 		return 1;
 	}
 	std::deque<Coords*> funrc = fun.getRC();
-	if (funrc[0] != &ca or funrc[1] != &cr1 or funrc[2] != &cr2 or funrc.size() != 3) {
+	if (funrc[0] != &ca or funrc[1] != &cr1 or funrc[2] != &cr2
+			or funrc.size() != 3) {
 		std::cout << "Right channel is not right after split in original funnel"
 				<< std::endl;
 		return 1;
@@ -138,6 +148,10 @@ int funnelSplitTest() {
 }
 
 int funnelShrinkTest() {
+
+	std::deque<Funnel> fq { };
+	std::vector<Coords*> n { };
+
 	Coords ca(0.0, 0.0);
 	Coords cl1(0.5, 1);
 	Coords cl2(0.7, 2);
@@ -151,11 +165,11 @@ int funnelShrinkTest() {
 
 	Funnel fun(&cl1, &ca, &cr1);
 
-	fun.reactToOpposite(&cr2);
-	fun.reactToOpposite(&cr3);
-	fun.reactToOpposite(&cl2);
-	fun.reactToOpposite(&cl3);
-	fun.reactToOpposite(&rs);
+	fun.reactToOpposite(&cr2, &fq, &n);
+	fun.reactToOpposite(&cr3, &fq, &n);
+	fun.reactToOpposite(&cl2, &fq, &n);
+	fun.reactToOpposite(&cl3, &fq, &n);
+	fun.reactToOpposite(&rs, &fq, &n);
 	std::deque<Coords*> rc = fun.getRC();
 	std::deque<Coords*> lc = fun.getLC();
 
@@ -164,13 +178,14 @@ int funnelShrinkTest() {
 		std::cout << "Right Chain not correct after shrinkR" << std::endl;
 		return 1;
 	}
-	if (lc[0] != &ca or lc[1] != &cl1 or lc[2] != &cl2 or lc[3] != &cl3 or lc.size() != 4) {
+	if (lc[0] != &ca or lc[1] != &cl1 or lc[2] != &cl2 or lc[3] != &cl3
+			or lc.size() != 4) {
 		std::cout << "Left chain not correct after shirnkR" << std::endl;
 		return 2;
 	}
-	fun.reactToOpposite(&ls);
+	fun.reactToOpposite(&ls, &fq, &n);
 	lc = fun.getLC();
-	if (lc[0] != &ca or lc[1] != &cl1 or  lc[2] != &ls or lc.size() != 3) {
+	if (lc[0] != &ca or lc[1] != &cl1 or lc[2] != &ls or lc.size() != 3) {
 		printChain(lc);
 		std::cout << "Left chain not correct after shrinkL & shirnkR"
 				<< std::endl;
