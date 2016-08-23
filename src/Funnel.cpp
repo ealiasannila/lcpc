@@ -9,36 +9,36 @@
 #include <sstream>
 #include <iostream>
 
-Funnel::Funnel(Coords* l, Coords* a, Coords* r) {
+Funnel::Funnel(const Coords* l, const Coords* a, const Coords* r) {
 	lc.push_back(a);
 	lc.push_back(l);
 	rc.push_back(a);
 	rc.push_back(r);
 }
-Funnel::Funnel(std::deque<Coords*> lc, std::deque<Coords*> rc) {
+Funnel::Funnel(std::deque<const Coords*> lc, std::deque<const Coords*> rc) {
 	this->lc = lc;
 	this->rc = rc;
 }
 
 //TODO varaudu jos deque on tyhjä tai jos törmää apexiin?
-std::pair<Coords*, Coords*> Funnel::getBase() {
-	return std::pair<Coords*,Coords* >(lc.back(), rc.back());
+std::pair<const Coords*, const Coords*> Funnel::getBase() {
+	return std::pair<const Coords*,const Coords* >(lc.back(), rc.back());
 }
-std::deque<Coords*> Funnel::getLC() {
+std::deque<const Coords*> Funnel::getLC() {
 	return lc;
 }
-std::deque<Coords*> Funnel::getRC() {
+std::deque<const Coords*> Funnel::getRC() {
 	return rc;
 }
 
 std::string Funnel::toString() {
 	std::stringstream sstm;
-	sstm << "LC: ";
-	for (Coords* c : lc) {
+	sstm << "\nLC: ";
+	for (const Coords* c : lc) {
 		sstm << '\n' << c->toString();
 	}
-	sstm << "RC: ";
-	for (Coords* c : rc) {
+	sstm << "\nRC: ";
+	for (const Coords* c : rc) {
 		sstm << '\n' << c->toString();
 	}
 
@@ -51,9 +51,9 @@ std::string Funnel::toString() {
  * so that left and right chains form two new funnels with the other chain
  * formed by apex and c.
  */
-Funnel Funnel::split(Coords* o) {
-	std::deque<Coords*> newlc = lc;
-	std::deque<Coords*> newrc;
+Funnel Funnel::split(const Coords* o) {
+	std::deque<const Coords*> newlc = lc;
+	std::deque<const Coords*> newrc;
 
 	lc.clear();
 	lc.push_back(rc.front());
@@ -67,7 +67,7 @@ Funnel Funnel::split(Coords* o) {
  * o is not inside the sector formed by fisrt segments of chains, but it is inside the funnel. In this case the funnel is shrunk
  * so that o forms the endpoint of the chain being shrunk.
  */
-void Funnel::shrink(Coords* o, std::deque<Coords*>* chain, unsigned lastRemaining) {
+void Funnel::shrink(const Coords* o, std::deque<const Coords*>* chain, unsigned lastRemaining) {
 	std::cout<<lastRemaining<<"<-Last"<<std::endl;
 	while (chain->size() - 1 > lastRemaining) {
 		chain->pop_back();
@@ -77,7 +77,7 @@ void Funnel::shrink(Coords* o, std::deque<Coords*>* chain, unsigned lastRemainin
 /*
  * locates the last endpoint of an edge in chain, from which's startpoint o can't be seen. (returns index of endpoint of that segment)
  */
-int Funnel::findInChain(Coords* o, std::deque<Coords*> chain, int side) {
+int Funnel::findInChain(const Coords* o, std::deque<const Coords*> chain, int side) {
 	for (unsigned i = 1; i < chain.size(); i++) {
 		if (o->isRight(chain.at(i - 1), chain.at(i)) == side) {
 			return i - 1;
@@ -91,7 +91,7 @@ int Funnel::findInChain(Coords* o, std::deque<Coords*> chain, int side) {
  * -1 -> left
  * 1 -> right
  */
-int Funnel::inFirstSector(Coords* o) {
+int Funnel::inFirstSector(const Coords* o) {
 	int lo = o->isRight(lc.at(0), lc.at(1));
 	int ro = o->isRight(rc.at(0), rc.at(1));
 
@@ -111,7 +111,7 @@ int Funnel::inFirstSector(Coords* o) {
  *  2. shrinks either chain
  *  3. expands either chain
  */
-void Funnel::reactToOpposite(Coords* o, std::deque<Funnel>* funnelQueue, std::vector<Coords*>* neighbours) {
+void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, std::list<const Coords*>* neighbours) {
 	switch (this->inFirstSector(o)) {
 	int lastRemaining;
 	case 0:

@@ -10,27 +10,27 @@
 #include <deque>
 #include "Coords.h"
 #include <string>
-#include <vector>
+#include <list>
 
 
 class Funnel {
 private:
-	std::deque<Coords*> lc;
-	std::deque<Coords*> rc;
-	void shrink(Coords* o, std::deque<Coords*>* chain, unsigned lastRemaining);
-	int inFirstSector(Coords* o);
-	int findInChain(Coords* o, std::deque<Coords*> chain, int side);
+	std::deque<const Coords*> lc;
+	std::deque<const Coords*> rc;
+	void shrink(const Coords* o, std::deque<const Coords*>* chain, unsigned lastRemaining);
+	int inFirstSector(const Coords* o);
+	int findInChain(const Coords* o, std::deque<const Coords*> chain, int side);
 
 public:
-	Funnel(Coords* l, Coords* a, Coords* r);
-	Funnel(std::deque<Coords*> lc, std::deque<Coords*> rc);
-	std::pair<Coords*, Coords*> getBase();
-	Funnel split(Coords* o);
-	void reactToOpposite(Coords* o, std::deque<Funnel>* funnelQueue, std::vector<Coords*>* neighbours);
-	std::deque<Coords*> getLC();
-	std::deque<Coords*> getRC();
+	Funnel(const Coords* l, const Coords* a, const Coords* r);
+	Funnel(std::deque<const Coords*> lc, std::deque<const Coords*> rc);
+	std::pair<const Coords*, const Coords*> getBase();
+	Funnel split(const Coords* o);
+	void reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, std::list<const Coords*>* neighbours);
+	std::deque<const Coords*> getLC();
+	std::deque<const Coords*> getRC();
 	std::string toString();
-	Coords* getApex(){return lc.front();}
+	const Coords* getApex(){return lc.front();}
 	virtual ~Funnel();
 };
 
