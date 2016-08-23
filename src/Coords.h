@@ -43,7 +43,6 @@ public:
 
 	bool operator==( const Coords& c) const;
 	bool operator!=( const Coords& c) const;
-	bool operator<( const Coords& rhs) const ;
 };
 
 #endif /* const Coords_H_ */

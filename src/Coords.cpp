@@ -86,11 +86,7 @@ bool Coords::operator==( const Coords& c)  const{
 bool Coords::operator!=( const Coords& c) const {
 	return !this->operator ==(c);
 }
-bool Coords::operator <( const Coords &rhs)  const{
-	double x = rhs.getX();
-	return x < this->x;
-}
-;
+
  Coords::~ Coords() {
 	// TODO Auto-generated destructor stub
 }
