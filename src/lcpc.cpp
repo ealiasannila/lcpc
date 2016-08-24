@@ -67,7 +67,7 @@ std::deque<Funnel> initFQue(const Coords* c, int polygon, std::set<const Coords*
 
 }
 
-void findNeighboursInPolygon(const Coords* c, int polygon, std::set<const Coords*>* neighbours) {
+void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours) {
 	std::deque<Funnel> funnelQue = initFQue(c, polygon, neighbours);
 
 	while (!funnelQue.empty()) {
@@ -81,8 +81,8 @@ void findNeighboursInPolygon(const Coords* c, int polygon, std::set<const Coords
 		}
 	}
 }
-std::set<const Coords*> findNeighbours(const Coords* c) {
-	std::set<const Coords*> neighbours { };
+nSet findNeighbours(const Coords* c) {
+	nSet neighbours { };
 	allNeighIter polyIt = c->getAllLeftN(); //Only keys area interesting here, first = begin iterator, second end iterator
 	for (allNContainer::iterator it = polyIt.first; it != polyIt.second; it++) {
 		findNeighboursInPolygon(c, it->first, &neighbours);
@@ -92,24 +92,43 @@ std::set<const Coords*> findNeighbours(const Coords* c) {
 
 void leastCostPath(const Coords* start, const Coords* end) {
 	start->setToStart(0);
-	struct coordComp {
+	struct compToStart {
 			bool operator()(const Coords* x, const Coords* y) const {
 				return ((x->getToStart())>(y->getToStart()));
 			}
 	} compare { };
-	MinHeap<Coords*, coordComp> minheap(compare);
+	MinHeap<const Coords*, compToStart> minheap(compare);
 
-	std::vector<Coords> cv { Coords(1,1),Coords(1,2),Coords(1,3),Coords(1,4) } ;
-	for (int i = 0; i<cv.size(); i++ ) {
-		cv[i].setToStart(i);
-		minheap.push(&cv[i]);
-	}
-	while (!minheap.empty()) {
-		std::cout << minheap.top()->toString()<<"tostart: "<<minheap.top()->getToStart() <<std::endl;
+	minheap.push(start);
+
+
+	while(!minheap.empty()){
+		const Coords* node = minheap.top();
 		minheap.pop();
+		nSet neighbours = findNeighbours(node);
+		for(const Coords* n:neighbours){
+			double d { node->getToStart() + node->eucDist(n) };
+			if(n->getToStart()<0){ // node has not yet been inserted into minheap
+				n->setToStart(d);
+				n->setPred(node);
+				minheap.push(n);
+			}
+			else if(n->getToStart() > d){
+				n->setToStart(d);
+				n->setPred(node);
+				minheap.update(); //reorders minheap after changing priority of n
+			}
+		}
 	}
 	//MinHeap<const Coords*> minHeap;
 	//minHeap.push(start);
+	std::cout<<"ROUTE FROM END TO START:"<<std::endl;
+	const Coords* pred = end->getPred();
+	std::cout<<end->toString()<<std::endl;
+	while(pred != 0){
+		std::cout<<pred->toString()<<endl;
+		pred = pred->getPred();
+	}
 
 }
 
@@ -180,6 +199,11 @@ int main() {
 	const Coords* f = &*fit;
 
 	leastCostPath(s, f);
+
+	std::cout<<"COORDMAP:"<<std::endl;
+	for(Coords c:coordmap){
+		std::cout<<"cost: "<<c.getToStart()<<" pred: "<<c.getPred()<<std::endl;
+	}
 	return 0;
 }
 

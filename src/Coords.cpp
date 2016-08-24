@@ -12,21 +12,23 @@
 Coords::Coords(double newx, double newy) {
 	x = newx;
 	y = newy;
-	toStart = std::numeric_limits<double>::infinity();
+	toStart = -1;
+	this->predecessor = 0;
 }
 
 Coords::Coords(double newx, double newy, int polygon) {
 	x = newx;
 	y = newy;
-	toStart = std::numeric_limits<double>::infinity();
+	toStart = -1;
 	this->addToPolygon(polygon);
-
+	this->predecessor = 0;
 }
 
 Coords::Coords() {
-	toStart = std::numeric_limits<double>::infinity();
+	toStart = -1;
 	x = -1;
 	y = -1;
+	this->predecessor = 0;
 }
 
 nContainer Coords::getRightNeighbours(int polygon) const {
@@ -56,6 +58,9 @@ void Coords::addNeighbours(const Coords* l, const Coords* r, int polygon) const 
 void Coords::setToStart(double cost) const{
 	toStart = cost;
 }
+void Coords::setPred(const Coords* pred) const{
+	predecessor = pred;
+}
 
 std::string Coords::toString() const {
 	std::stringstream sstm;
@@ -73,11 +78,11 @@ int Coords::isRight(const Coords* c1, const Coords* c2) const {
 	return 0;
 }
 
-double Coords::eucDistSquared(const Coords* c1) {
+double Coords::eucDistSquared(const Coords* c1) const{
 	return pow(c1->getX() - x, 2) + pow(c1->getY() - y, 2);
 }
 
-double Coords::eucDist(const Coords* c1) {
+double Coords::eucDist(const Coords* c1) const {
 	return sqrt(this->eucDistSquared(c1));
 }
 

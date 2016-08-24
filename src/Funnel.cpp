@@ -111,7 +111,7 @@ int Funnel::inFirstSector(const Coords* o) {
  *  2. shrinks either chain
  *  3. expands either chain
  */
-void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, std::set<const Coords*>* neighbours) {
+void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, nSet* neighbours) {
 	switch (this->inFirstSector(o)) {
 	int lastRemaining;
 	case 0:

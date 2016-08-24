@@ -18,6 +18,7 @@ private:
 
 	//change map to two sorted vectors (ints and coords) and binary search. (few insertions many lookups)
 	mutable double toStart;
+	mutable const Coords* predecessor;
 	mutable allNContainer leftNeighbours;
 	mutable allNContainer rightNeighbours;
 
@@ -34,13 +35,17 @@ public:
 	double getToStart() const {
 		return toStart;
 	}
+	const Coords* getPred() const {
+		return predecessor;
+	}
 	void setToStart(double cost) const;
+	void setPred(const Coords* pred) const;
 	double getY() const {
 		return y;
 	}
 	int isRight(const Coords* c1, const Coords* c2) const;
-	double eucDist(const Coords* c1);
-	double eucDistSquared(const Coords* c1);
+	double eucDist(const Coords* c1) const;
+	double eucDistSquared(const Coords* c1) const;
 	nContainer getRightNeighbours(int polygon) const;
 	nContainer getLeftNeighbours(int polygon) const;
 	allNeighIter getAllLeftN() const;

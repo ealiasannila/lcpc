@@ -19,6 +19,6 @@ typedef std::vector<const Coords*> nContainer;
 typedef std::map<int, nContainer> allNContainer;
 typedef std::pair<nContainer::iterator, nContainer::iterator>	neighIter;
 typedef std::pair<std::map<int, nContainer>::iterator, std::map<int, nContainer>::iterator> allNeighIter;
-
+typedef std::set<const Coords*> nSet; //used in dijsktra/A* must not allow duplicates.
 
 #endif /* SRC_DEFS_H_ */
