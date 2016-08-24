@@ -26,7 +26,7 @@ public:
 	Funnel(std::deque<const Coords*> lc, std::deque<const Coords*> rc);
 	std::pair<const Coords*, const Coords*> getBase();
 	Funnel split(const Coords* o);
-	void reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, std::list<const Coords*>* neighbours);
+	void reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, std::set<const Coords*>* neighbours);
 	std::deque<const Coords*> getLC();
 	std::deque<const Coords*> getRC();
 	std::string toString();

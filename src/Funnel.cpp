@@ -111,13 +111,13 @@ int Funnel::inFirstSector(const Coords* o) {
  *  2. shrinks either chain
  *  3. expands either chain
  */
-void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, std::list<const Coords*>* neighbours) {
+void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, std::set<const Coords*>* neighbours) {
 	switch (this->inFirstSector(o)) {
 	int lastRemaining;
 	case 0:
 		std::cout<<"splitting"<<std::endl;
 		funnelQueue->push_back(this->split(o));
-		neighbours->push_back(o);
+		neighbours->insert(o);
 
 		//TODO Add the split funnels to handling queue - Ehkä pakita siihen että palauttaa numerokoodin ja kutsuja tekee sen perusteella juttuja
 		// toinen vaihtis olis että palauttaa aina listan funneleita, eli joko vain itsensä, tai sitten 2 uutta. Tai pointteri quehen...

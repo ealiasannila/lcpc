@@ -7,6 +7,7 @@
 //============================================================================
 #include "Coords.h"
 #include "Funnel.h"
+#include "minHeap.h"
 #include "../lib/geometry.h"
 #include <algorithm>
 #include <tr1/functional>
@@ -20,78 +21,100 @@ struct CoordsHasher {
 	}
 };
 
-const Coords* getOpposing(const Coords* l, const Coords* r, int polygon) {
-	std::pair<std::set<const Coords*>::iterator, std::set<const Coords*>::iterator> ln = l->getLeftNeighbours(polygon);
-	std::pair<std::set<const Coords*>::iterator, std::set<const Coords*>::iterator> rn = r->getRightNeighbours(polygon);
-	/*std::cout<<"LEFT NEIGHBOURS OF 50-200\n";
-	 for (std::set<const Coords*>::iterator it = ln.first; it != ln.second; it++) {
-	 std::cout << (*it)->toString() << std::endl;
-	 }
-	 std::cout<<"RIGHT NEIGHBOURS OF 115-160\n";
-	 for (std::set<const Coords*>::iterator it = rn.first; it != rn.second; it++) {
-	 std::cout << (*it)->toString() << std::endl;
-	 }
-	 */
-	std::vector<const Coords*> intersection;
-	std::set_intersection(ln.first, ln.second, rn.first, rn.second, std::back_inserter(intersection));
-	if (intersection.size() > 0) {
-		return *intersection.begin();
+void printN(nContainer n) {
+	for (const Coords* c : n) {
+		std::cout << c->toString() << std::endl;
 	}
+}
 
-	std::cout << "No opposing found" << std::endl;
+/*
+ * Finds opposing by looking up intersection of the immidiate neighbours of either end of the base.
+ * This can be either 1 or 2 vertices, of whcih 1 or 0 may be relevant. (irrelevant vertice is already inside funnel)
+ * LOOKING UP INTERSECTION REQUIRES SORTING IMMIDIATE NEIGHBOURS. HOW TO MAKE FASTER:
+ * ?-> have sorted vector of immidiate neighbours available. (increases insertion time to log N, now constant)
+ */
+const Coords* getOpposing(const Coords* l, const Coords* r, int polygon) {
+	nContainer ln = l->getLeftNeighbours(polygon);
+	nContainer rn = r->getRightNeighbours(polygon);
+
+	sort(ln.begin(), ln.end()); //... could this be avoided? Or is it that bad? they are small vectors...
+	sort(rn.begin(), rn.end()); //...
+
+	nContainer intersection;
+	std::set_intersection(ln.begin(), ln.end(), rn.begin(), rn.end(), std::back_inserter(intersection));
+	for (nContainer::iterator it = intersection.begin(); it != intersection.end(); it++) {
+		if (*it != 0 and (*it)->isRight(l, r) == -1) {
+			return *it;
+		}
+	}
 	return 0;
 }
 
-void findNeighboursInPolygon(const Coords* c, int polygon, std::list<const Coords*>* neighbours) {
-	std::pair<std::set<const Coords*>::iterator, std::set<const Coords*>::iterator> ln = c->getLeftNeighbours(polygon);
-	std::pair<std::set<const Coords*>::iterator, std::set<const Coords*>::iterator> rn = c->getRightNeighbours(polygon);
-	std::cout << std::endl << std::endl;
+std::deque<Funnel> initFQue(const Coords* c, int polygon, std::set<const Coords*>*neighbours) {
+	nContainer ln = c->getLeftNeighbours(polygon);
+	nContainer rn = c->getRightNeighbours(polygon);
+
 	std::deque<Funnel> funnelQue { };
-	std::set<const Coords*>::iterator rit = rn.first;
+	nContainer::iterator rit = rn.begin();
+	for (nContainer::iterator lit = ln.begin(); lit != ln.end(); lit++) {
+		Funnel f(*lit, c, *rit);
+		neighbours->insert(*lit);
+		neighbours->insert(*rit);
+		funnelQue.push_back(f);
+		rit++;
+	}
+	return funnelQue;
 
+}
 
-	for (std::set<const Coords*>::iterator lit = ln.first; lit != ln.second; lit++) {
-	 Funnel f(*lit, c, *rit);
-	 std::cout << f.toString();
-	 funnelQue.push_back(f);
-	 rit++;
-	 std::cout << "\n";
-	 }
-	std::cout << "\n starting while loop";
+void findNeighboursInPolygon(const Coords* c, int polygon, std::set<const Coords*>* neighbours) {
+	std::deque<Funnel> funnelQue = initFQue(c, polygon, neighbours);
 
 	while (!funnelQue.empty()) {
-		std::cout << "fq.size = " << funnelQue.size() << std::endl;
 		Funnel f = funnelQue.front();
-		std::cout << "front" << std::endl;
 		funnelQue.pop_front();
-		std::cout << "popfront" << std::endl;
 		std::pair<const Coords*, const Coords*> base = f.getBase();
-		std::cout << "base" << std::endl;
-		std::cout << base.first->toString() << "<->" << base.second->toString() << std::endl;
 		const Coords* o = getOpposing(base.first, base.second, polygon);
-		std::cout << "opposing" << o->toString() << std::endl;
 		if (o != 0) {
-			std::cout << "reacting" << std::endl;
 			f.reactToOpposite(o, &funnelQue, neighbours);
-			std::cout << "pushing back" << std::endl;
 			funnelQue.push_back(f);
-		} else {
-			std::cout << "stopping" << std::endl;
 		}
 	}
 }
-std::list<const Coords*> findNeighbours(Coords* c) {
-	std::list<const Coords*> neighbours { };
-	std::pair<std::map<int, std::set<const Coords*>>::iterator, std::map<int, std::set<const Coords*>>::iterator> polyIt = c->getAllLeftN(); //Only keys area interesting here, first = begin iterator, second end iterator
-	for (std::map<int, std::set<const Coords*>>::iterator it = polyIt.first; it != polyIt.second; it++) {
+std::set<const Coords*> findNeighbours(const Coords* c) {
+	std::set<const Coords*> neighbours { };
+	allNeighIter polyIt = c->getAllLeftN(); //Only keys area interesting here, first = begin iterator, second end iterator
+	for (allNContainer::iterator it = polyIt.first; it != polyIt.second; it++) {
 		findNeighboursInPolygon(c, it->first, &neighbours);
 	}
 	return neighbours;
 }
 
+void leastCostPath(const Coords* start, const Coords* end) {
+	start->setToStart(0);
+	struct coordComp {
+			bool operator()(const Coords* x, const Coords* y) const {
+				return ((x->getToStart())>(y->getToStart()));
+			}
+	} compare { };
+	MinHeap<Coords*, coordComp> minheap(compare);
+
+	std::vector<Coords> cv { Coords(1,1),Coords(1,2),Coords(1,3),Coords(1,4) } ;
+	for (int i = 0; i<cv.size(); i++ ) {
+		cv[i].setToStart(i);
+		minheap.push(&cv[i]);
+	}
+	while (!minheap.empty()) {
+		std::cout << minheap.top()->toString()<<"tostart: "<<minheap.top()->getToStart() <<std::endl;
+		minheap.pop();
+	}
+	//MinHeap<const Coords*> minHeap;
+	//minHeap.push(start);
+
+}
+
 int main() {
 
-	//test();
 	Polygon poly("sample1.bdm", true);
 	poly.setDebugOption(false);      //set debug flag;
 	poly.triangulation();
@@ -129,7 +152,6 @@ int main() {
 			bool alreadyThere = !p.second;
 			if (alreadyThere) {
 				std::cout << "merging at " << c[i].toString() << std::endl;
-				std::cout << "merginwith " << coordmap.find(c[i])->toString() << std::endl;
 			} else {
 				std::cout << "inserted new at " << c[i].toString() << std::endl;
 			}
@@ -143,38 +165,21 @@ int main() {
 			if (r == 3) {
 				r = 0;
 			}
-
-			//p.first->addToPolygon(0);
-			cp[i]->addNeighbours(&*coordmap.find(c[l]), &*coordmap.find(c[r]), 0);
+			std::cout << "adding to" << cp[i]->toString() << std::endl;
+			//std::cout<<"L"<<->toString()<<std::endl;
+			//std::cout<<"R"<<&*coordmap.find(c[r])->toString()<<std::endl;
+			cp[i]->addNeighbours(cp[l], cp[r], 0);
 		}
 	}
+
 	std::cout << "coords found: " << coordmap.size() << std::endl;
+//set start vertex:
+	std::tr1::unordered_set<Coords>::iterator sit = coordmap.find(Coords(400, 50, 0));
+	const Coords* s = &*sit;
+	std::tr1::unordered_set<Coords>::iterator fit = coordmap.find(Coords(50, 200, 0));
+	const Coords* f = &*fit;
 
-	std::cout << "neighbours off 100 100" << std::endl;
-	std::tr1::unordered_set<Coords>::iterator fit = coordmap.find(Coords(100, 100, 0));
-	Coords* f = (Coords*) &*fit;
-	std::pair<std::set<const Coords*>::iterator, std::set<const Coords*>::iterator> lneigh = f->getLeftNeighbours(0);
-	std::pair<std::set<const Coords*>::iterator, std::set<const Coords*>::iterator> rneigh = f->getRightNeighbours(0);
-	for (; lneigh.first != lneigh.second; lneigh.first++) {
-		std::cout << "  " << (*lneigh.first)->toString() << "<===>" << (*rneigh.first)->toString() << std::endl;
-		rneigh.first++;
-	}
-	std::tr1::unordered_set<Coords>::iterator lfit = coordmap.find(Coords(50, 200, 0));
-	Coords* lf = (Coords*) &*lfit;
-	std::tr1::unordered_set<Coords>::iterator rfit = coordmap.find(Coords(115, 160, 0));
-	Coords* rf = (Coords*) &*rfit;
-
-	std::cout << "opposing: " << getOpposing(lf, rf, 0)->toString();
-	std::cout << "\ntest" << std::endl;
-	std::cout << (Coords(300, 250) == Coords(300, 200)) << std::endl;
-
-	std::cout << "neighbours:" << std::endl;
-	std::list<const Coords*> n = findNeighbours(f);
-	std::cout << "RESULT:" << std::endl;
-	for (const Coords* c : n) {
-		std::cout << c->toString() << std::endl;
-	}
-
+	leastCostPath(s, f);
 	return 0;
 }
 
