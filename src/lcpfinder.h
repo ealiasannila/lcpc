@@ -7,8 +7,21 @@
 
 #ifndef SRC_LCPFINDER_H_
 #define SRC_LCPFINDER_H_
-#include <unordered_set>
-struct CoordsHasher;
+#include <algorithm>
+#include <iostream>
+#include "Coords.h"
+#include "Funnel.h"
+#include <tr1/functional>
+#include <tr1/unordered_set>
+
+struct CoordsHasher {
+	std::size_t operator()(const Coords& c) const {
+		std::size_t res = 17;
+		res = res * 31 + std::tr1::hash<double>()(c.getX());
+		res = res * 31 + std::tr1::hash<double>()(c.getY());
+		return res;
+	}
+};
 class LcpFinder{
 private:
 	std::tr1::unordered_set<Coords, CoordsHasher> coordmap;

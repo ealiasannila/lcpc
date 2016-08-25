@@ -7,19 +7,22 @@ CPP_SRCS += \
 ../src/Coords.cpp \
 ../src/Edge.cpp \
 ../src/Funnel.cpp \
-../src/lcpc.cpp 
+../src/lcpc.cpp \
+../src/lcpfinder.cpp 
 
 OBJS += \
 ./src/Coords.o \
 ./src/Edge.o \
 ./src/Funnel.o \
-./src/lcpc.o 
+./src/lcpc.o \
+./src/lcpfinder.o 
 
 CPP_DEPS += \
 ./src/Coords.d \
 ./src/Edge.d \
 ./src/Funnel.d \
-./src/lcpc.d 
+./src/lcpc.d \
+./src/lcpfinder.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

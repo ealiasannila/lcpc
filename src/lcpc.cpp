@@ -12,10 +12,53 @@
 #include <algorithm>
 #include <tr1/functional>
 #include <tr1/unordered_set>
+#include "lcpfinder.h"
 
+long int line_id = 0;
 
+class InsPoly: public Polygon {
+private:
+	Pointbase* prev = 0;
+	Pointbase* first = 0;
+public:
+	void addPoint(unsigned int i, double x, double y);
+	void addEdge(Pointbase* s, Pointbase* e);
+	void closeRing();
+};
 
+void InsPoly::addPoint(unsigned int i, double x, double y) {
+	Pointbase* point = new Pointbase(i, x, y, INPUT);
+	if (x > _xmax)
+		_xmax = x;
+	if (x < _xmin)
+		_xmin = x;
+	if (y > _ymax)
+		_ymax = y;
+	if (y < _ymin)
+		_ymin = y;
+	_points[1] = point;
 
+	if (first == 0) {
+		first = point;
+		prev = point;
+	} else if (prev != 0) {
+		Linebase* line = new Linebase(prev, point, INPUT);
+		line_id++;
+		_edges[line_id] = line;
+		prev = point;
+	}
+
+}
+
+void InsPoly::closeRing() {
+	Linebase* line = new Linebase(prev, first, INPUT);
+	line_id++;
+	_edges[line_id] = line;
+
+	prev = 0;
+	first = 0;
+
+}
 
 int main() {
 	/*
@@ -25,7 +68,6 @@ int main() {
 	 * Minheap, parempi update operaatio
 	 *
 	 */
-
 
 	Polygon poly("sample1.bdm", true);
 	poly.setDebugOption(false);      //set debug flag;
@@ -91,11 +133,9 @@ int main() {
 	std::tr1::unordered_set<Coords>::iterator fit = coordmap.find(Coords(300, 250, 0));
 	const Coords* f = &*fit;
 
-	leastCostPath(s, f);
-
-	std::cout<<"COORDMAP:"<<std::endl;
-	for(Coords c:coordmap){
-		std::cout<<"cost: "<<c.getToStart()<<" pred: "<<c.getPred()<<std::endl;
+	std::cout << "COORDMAP:" << std::endl;
+	for (Coords c : coordmap) {
+		std::cout << "cost: " << c.getToStart() << " pred: " << c.getPred() << std::endl;
 	}
 	return 0;
 }

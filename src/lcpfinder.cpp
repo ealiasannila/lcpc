@@ -5,17 +5,9 @@
  *      Author: elias
  */
 
-#include <algorithm>
-#include <iostream>
 
-struct CoordsHasher {
-	std::size_t operator()(const Coords& c) const {
-		std::size_t res = 17;
-		res = res * 31 + std::tr1::hash<double>()(c.getX());
-		res = res * 31 + std::tr1::hash<double>()(c.getY());
-		return res;
-	}
-};
+#include "lcpfinder.h"
+#include "minHeap.h"
 
 /*
  * Finds opposing by looking up intersection of the immidiate neighbours of either end of the base.
