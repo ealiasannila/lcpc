@@ -23,8 +23,6 @@
 #include <queue>
 #include <set>
 
-using namespace std;
-
 #define sqr(t)  (t)*(t)
 
 const double    PI=3.141592653589793238462643383279502884197169399375105820974944592308;
@@ -33,15 +31,15 @@ enum  Type      { UNKNOWN, INPUT, INSERT, START, END, MERGE, SPLIT, REGULAR_UP, 
 class   Pointbase;
 class   Linebase;
 
-template <class T, class KeyType>      class    SplayTree;
-typedef map<unsigned int, Pointbase*>           PointbaseMap;
-typedef map<unsigned int, Linebase*>            LineMap;
-typedef priority_queue<Pointbase>               PQueue;
-typedef SplayTree<Linebase*, double>            EdgeBST;
-typedef list<unsigned int>                      Monopoly;
-typedef list<Monopoly>                          Monopolys; 
-typedef vector<unsigned int>                    Triangle;
-typedef list<Triangle>                          Triangles;
-typedef map<unsigned int, set<unsigned int> >   AdjEdgeMap;
+template <class T, class KeyType>      class    	SplayTree;
+typedef std::map<unsigned int, Pointbase*>           PointbaseMap;
+typedef std::map<unsigned int, Linebase*>            LineMap;
+typedef std::priority_queue<Pointbase>               PQueue;
+typedef SplayTree<Linebase*, double>            	EdgeBST;
+typedef std::list<unsigned int>                      Monopoly;
+typedef std::list<Monopoly>                          Monopolys;
+typedef std::vector<unsigned int>                    Triangle;
+typedef std::list<Triangle>                          Triangles;
+typedef std::map<unsigned int, std::set<unsigned int> >   AdjEdgeMap;
 #endif
 

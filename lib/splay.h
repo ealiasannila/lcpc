@@ -82,7 +82,7 @@ class SplayTree
       void InOrder( void(*Visit)(BTreeNode<T,KeyType> *u) ) 
                 { InOrder(Visit, root); }
 
-      void InOrder( void(*Visit)(BTreeNode<T,KeyType>*u, ostream&), ostream& os)
+      void InOrder( void(*Visit)(BTreeNode<T,KeyType>*u, std::ostream&), std::ostream& os)
                 { InOrder(Visit, root, os); }
       
       void InOrder( void(*Visit)(BTreeNode<T,KeyType>*u, double y), double y)
@@ -107,8 +107,8 @@ class SplayTree
       void PreOrder( void(*Visit)(BTreeNode<T, KeyType> *u), BTreeNode<T, KeyType> *t);
       void InOrder( void(*Visit)(BTreeNode<T, KeyType> *u), BTreeNode<T, KeyType> *t);
       void PostOrder( void(*Visit)(BTreeNode<T, KeyType> *u), BTreeNode<T, KeyType> *t);
-      void InOrder( void(*Visit)(BTreeNode<T, KeyType>*, ostream&), 
-		BTreeNode<T, KeyType> *t, ostream& os);
+      void InOrder( void(*Visit)(BTreeNode<T, KeyType>*, std::ostream&),
+		BTreeNode<T, KeyType> *t, std::ostream& os);
       
       void InOrder( void(*Visit)(BTreeNode<T, KeyType>*, double y),
 		                      BTreeNode<T, KeyType> *t, double y);
@@ -533,8 +533,8 @@ void SplayTree<T, KeyType>::InOrder( void(*Visit)(BTreeNode<T, KeyType> *u), BTr
 //Tranverse the tree by in-order method;
 //-----------------------------------------------------------------------
 template<class T, class KeyType>
-void SplayTree<T, KeyType>::InOrder( void(*Visit)(BTreeNode<T, KeyType>*u, ostream&)
-, BTreeNode<T, KeyType> *t, ostream& os)
+void SplayTree<T, KeyType>::InOrder( void(*Visit)(BTreeNode<T, KeyType>*u, std::ostream&)
+, BTreeNode<T, KeyType> *t, std::ostream& os)
 {
    if(t!=NULL)
      {
