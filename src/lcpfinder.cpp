@@ -32,7 +32,7 @@ const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polyg
 	return 0;
 }
 
-std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, std::set<const Coords*>*neighbours) {
+std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*neighbours) {
 	nContainer ln = c->getLeftNeighbours(polygon);
 	nContainer rn = c->getRightNeighbours(polygon);
 
@@ -40,8 +40,8 @@ std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, std::set<co
 	nContainer::iterator rit = rn.begin();
 	for (nContainer::iterator lit = ln.begin(); lit != ln.end(); lit++) {
 		Funnel f(*lit, c, *rit);
-		neighbours->insert(*lit);
-		neighbours->insert(*rit);
+		neighbours->insert(std::pair<const Coords*, int>(*lit,polygon));
+		neighbours->insert(std::pair<const Coords*, int>(*rit,polygon));
 		funnelQue.push_back(f);
 		rit++;
 	}
@@ -58,7 +58,7 @@ void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neig
 		std::pair<const Coords*, const Coords*> base = f.getBase();
 		const Coords* o = getOpposing(base.first, base.second, polygon);
 		if (o != 0) {
-			f.reactToOpposite(o, &funnelQue, neighbours);
+			f.reactToOpposite(o, &funnelQue, neighbours, polygon);
 			funnelQue.push_back(f);
 		}
 	}
@@ -99,8 +99,9 @@ std::vector<Coords> LcpFinder::leastCostPath(const Coords s, const Coords e) {
 		const Coords* node = minheap.top();
 		minheap.pop();
 		nSet neighbours = findNeighbours(node);
-		for (const Coords* n : neighbours) {
-			double d { node->getToStart() + node->eucDist(n) };
+		for (std::pair<const Coords*, int> p : neighbours) {
+			const Coords* n = p.first;
+			double d { node->getToStart() + node->eucDist(n)*this->frictions[p.second] };
 			if (n->getToStart() < 0) { // node has not yet been inserted into minheap
 				n->setToStart(d);
 				n->setPred(node);
@@ -116,7 +117,8 @@ std::vector<Coords> LcpFinder::leastCostPath(const Coords s, const Coords e) {
 	return std::vector<Coords> {*end};
 }
 
-void LcpFinder::addPolygon(int polygon, std::vector<std::vector<Coords>> points) {
+void LcpFinder::addPolygon(int polygon, std::vector<std::vector<Coords>> points, double friction) {
+	this->frictions[polygon] = friction;
 	int i { 1 };
 	Polygon triangulator { };
 	for (unsigned int ring = 0; ring < points.size(); ring++) {

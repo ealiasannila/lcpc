@@ -26,14 +26,14 @@ struct CoordsHasher {
 class LcpFinder{
 private:
 	std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
-
+	std::map<int, double> frictions; //update to something ligther
 	const Coords* getOpposing(const Coords* l, const Coords* r, int polygon);
-	std::deque<Funnel> initFQue(const Coords* c, int polygon, std::set<const Coords*>*neighbours);
+	std::deque<Funnel> initFQue(const Coords* c, int polygon, nSet*neighbours);
 	void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours);
 	nSet findNeighbours(const Coords* c);
 public:
 	std::vector<Coords> leastCostPath(const Coords s, const Coords e);
-	void addPolygon(int polygon, std::vector<std::vector<Coords>> points);
+	void addPolygon(int polygon, std::vector<std::vector<Coords>> points, double friction);
 
 };
 
