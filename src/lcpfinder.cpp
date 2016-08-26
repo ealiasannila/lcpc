@@ -5,9 +5,9 @@
  *      Author: elias
  */
 
-
 #include "lcpfinder.h"
 #include "minHeap.h"
+#include <array>
 
 /*
  * Finds opposing by looking up intersection of the immidiate neighbours of either end of the base.
@@ -72,7 +72,19 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
 	return neighbours;
 }
 
-void LcpFinder::leastCostPath(const Coords* start, const Coords* end) {
+std::vector<Coords> LcpFinder::leastCostPath(const Coords s, const Coords e) {
+
+	std::tr1::unordered_set<Coords>::iterator startIt = this->coordmap.find(s);
+	const Coords* start;
+	if (startIt != coordmap.end()) {
+		start = &*startIt;
+	}
+	std::tr1::unordered_set<Coords>::iterator endIt = this->coordmap.find(e);
+	const Coords* end;
+	if (endIt != coordmap.end()) {
+		end = &*endIt;
+	}
+
 	start->setToStart(0);
 	struct compToStart {
 		bool operator()(const Coords* x, const Coords* y) const {
@@ -100,30 +112,72 @@ void LcpFinder::leastCostPath(const Coords* start, const Coords* end) {
 			}
 		}
 	}
-	//MinHeap<const Coords*> minHeap;
-	//minHeap.push(start);
-	std::cout << "ROUTE FROM END TO START:" << std::endl;
-	const Coords* pred = end->getPred();
-	std::cout << end->toString() << std::endl;
-	while (pred != 0) {
-		std::cout << pred->toString() << std::endl;
-		pred = pred->getPred();
-	}
-
+	//update to many endpoints
+	return std::vector<Coords> {*end};
 }
 
 void LcpFinder::addPolygon(int polygon, std::vector<std::vector<Coords>> points) {
-	for (std::vector<Coords> ring : points) {
-		for (Coords p : ring) {
+	int i { 1 };
+	Polygon triangulator { };
+	for (unsigned int ring = 0; ring < points.size(); ring++) {
+		for (Coords p : points[ring]) {
 			p.addToPolygon(polygon);
-			// SOMEHOW ADD TO TRIANGULATOR...
+			triangulator.addPoint(i, p.getX(), p.getY(), ring);
+			i++;
 		}
 	}
-	/*
-	 * for triangle in triangles:
-	 * 		this->coordmap.insert(p);
-	 *
-	 */
+	std::cout << "points added\n";
+	triangulator.addEdges();
+	std::cout << "edges added\n";
+	std::cout << triangulator.points().at(1)->id;
+	triangulator.initializate();
+	std::cout << "init done\n";
+	triangulator.triangulation();
+	Triangles triangles = triangulator.triangles();
+	std::cout << "triangulaton done: " << triangles.size() << " triangles created" << std::endl;
+
+	for (std::list<Triangle>::iterator it = triangles.begin(); it != triangles.end(); it++) {
+		Triangle triangle = *it;
+		const Coords* cp[3];
+		Coords c[3];
+		for (unsigned i = 0; i < 3; i++) {
+			Pointbase pb = *triangulator.points().at(triangle[i]);
+			c[i] = Coords(pb.x, pb.y, polygon);
+
+		}
+		// if triangle orientation is clockwise turn it to CCW
+		if (c[0].isRight(&c[1], &c[2]) == 1) {
+			Coords tmp = c[2];
+			c[2] = c[1];
+			c[1] = tmp;
+			std::cout << "changed orientation." << std::endl;
+		} else {
+			std::cout << "orientation fine" << std::endl;
+		}
+
+		for (unsigned i = 0; i < 3; i++) {
+			std::pair<std::tr1::unordered_set<Coords>::iterator, bool> p = coordmap.insert(c[i]);
+			cp[i] = &*p.first;
+			bool alreadyThere = !p.second;
+			if (alreadyThere) {
+				std::cout << "merging at " << c[i].toString() << std::endl;
+				cp[i]->addToPolygon(polygon);
+			} else {
+				std::cout << "inserted new at " << c[i].toString() << std::endl;
+			}
+		}
+		for (unsigned i = 0; i < 3; i++) {
+			int l = i - 1;
+			int r = i + 1;
+			if (l == -1) {
+				l = 2;
+			}
+			if (r == 3) {
+				r = 0;
+			}
+			cp[i]->addNeighbours(cp[l], cp[r], polygon);
+		}
+	}
 
 }
 

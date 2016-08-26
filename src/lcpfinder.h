@@ -11,6 +11,7 @@
 #include <iostream>
 #include "Coords.h"
 #include "Funnel.h"
+#include "../lib/geometry.h"
 #include <tr1/functional>
 #include <tr1/unordered_set>
 
@@ -31,7 +32,7 @@ private:
 	void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours);
 	nSet findNeighbours(const Coords* c);
 public:
-	void leastCostPath(const Coords* start, const Coords* end);
+	std::vector<Coords> leastCostPath(const Coords s, const Coords e);
 	void addPolygon(int polygon, std::vector<std::vector<Coords>> points);
 
 };

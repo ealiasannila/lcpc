@@ -181,6 +181,9 @@ Polygon::Polygon() {
 //polygon destructor 
 //----------------------------------------------------------------------------
 Polygon::~Polygon() {
+	//reset globals... Make something better
+	l_id = 0;
+	p_id = 0;
 
 	//clear all dynamic allocated memory
 	PointbaseMap::iterator itp = _points.begin();
@@ -308,8 +311,7 @@ void Polygon::initializate() {
 		std::cout << "point: " << id << std::endl;
 		int idp = prev(id);
 		int idn = next(id);
-		Pointbase p = *_points[id], pnext = *_points[idn], pprev = *_points[idp];
-
+		Pointbase p = *_points.at(id), pnext = *_points.at(idn), pprev = *_points.at(idp);
 		if (p > pnext && pprev > p) {
 			std::cout << "regular down\n";
 			_points[id]->type = REGULAR_DOWN;
@@ -329,12 +331,12 @@ void Polygon::initializate() {
 			pc[1] = _points[idn]->y;
 
 			double area = orient2d(pa, pb, pc);
-			std::cout << pa[0] << "," <<pa[1] << "->"<< pb[0] << ","<<pb[1] << "->" << pc[0] <<","<<pa[1] << ": " << area << std::endl;
+			std::cout << pa[0] << "," << pa[1] << "->" << pb[0] << "," << pb[1] << "->" << pc[0] << "," << pa[1] << ": " << area << std::endl;
 
 			if (pprev > p && pnext > p) {
-				if(area>0){
+				if (area > 0) {
 					std::cout << "end\n";
-				}else{
+				} else {
 					std::cout << "merge\n";
 
 				}
@@ -342,9 +344,9 @@ void Polygon::initializate() {
 
 			}
 			if (pprev < p && pnext < p) {
-				if(area>0){
+				if (area > 0) {
 					std::cout << "start\n";
-				}else{
+				} else {
 					std::cout << "split\n";
 
 				}

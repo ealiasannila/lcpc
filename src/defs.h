@@ -13,6 +13,7 @@
 #include <queue>
 #include <set>
 #include <vector>
+#include <array>
 
 class Coords;
 typedef std::vector<const Coords*> nContainer;
