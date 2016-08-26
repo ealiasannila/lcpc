@@ -32,9 +32,9 @@ int main() {
 	std::cout << "P1\n";
 	poly.addPoint(2, 1, 0, 0);
 	std::cout << "P2\n";
-	poly.addPoint(3, 1, 1, 0);
+	poly.addPoint(3, 1.5, 0.5, 0);
 	std::cout << "P3\n";
-	poly.addPoint(4, 1.5, 0.5, 0);
+	poly.addPoint(4, 1, 1, 0);
 	std::cout << "P4\n";
 	poly.addPoint(5, 0, 1, 0);
 	std::cout << "P5\n";
