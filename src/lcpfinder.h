@@ -31,9 +31,10 @@ private:
 	std::deque<Funnel> initFQue(const Coords* c, int polygon, nSet*neighbours);
 	void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours);
 	nSet findNeighbours(const Coords* c);
+	std::vector<Coords> intermidiatePoints(Coords p, Coords next, double maxDist);
 public:
 	std::vector<Coords> leastCostPath(const Coords s, const Coords e);
-	void addPolygon(int polygon, std::vector<std::vector<Coords>> points, double friction);
+	void addPolygon(int polygon, std::vector<std::vector<Coords>> points, double friction, double maxDist);
 
 };
 

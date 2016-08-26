@@ -40,8 +40,8 @@ std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*neighb
 	nContainer::iterator rit = rn.begin();
 	for (nContainer::iterator lit = ln.begin(); lit != ln.end(); lit++) {
 		Funnel f(*lit, c, *rit);
-		neighbours->insert(std::pair<const Coords*, int>(*lit,polygon));
-		neighbours->insert(std::pair<const Coords*, int>(*rit,polygon));
+		neighbours->insert(std::pair<const Coords*, int>(*lit, polygon));
+		neighbours->insert(std::pair<const Coords*, int>(*rit, polygon));
 		funnelQue.push_back(f);
 		rit++;
 	}
@@ -101,7 +101,7 @@ std::vector<Coords> LcpFinder::leastCostPath(const Coords s, const Coords e) {
 		nSet neighbours = findNeighbours(node);
 		for (std::pair<const Coords*, int> p : neighbours) {
 			const Coords* n = p.first;
-			double d { node->getToStart() + node->eucDist(n)*this->frictions[p.second] };
+			double d { node->getToStart() + node->eucDist(n) * this->frictions[p.second] };
 			if (n->getToStart() < 0) { // node has not yet been inserted into minheap
 				n->setToStart(d);
 				n->setPred(node);
@@ -114,18 +114,50 @@ std::vector<Coords> LcpFinder::leastCostPath(const Coords s, const Coords e) {
 		}
 	}
 	//update to many endpoints
-	return std::vector<Coords> {*end};
+	std::cout<<"nearly\n";
+	std::vector<Coords> res { *end };
+	std::cout<<"almost\n";
+	return res;
 }
 
-void LcpFinder::addPolygon(int polygon, std::vector<std::vector<Coords>> points, double friction) {
+std::vector<Coords> LcpFinder::intermidiatePoints(Coords p, Coords next, double maxDist) {
+	std::cout << "P: " << p.toString() << std::endl;
+	std::cout << "N: " << next.toString() << std::endl;
+	int pointsToAdd = std::ceil(p.eucDist(&next) / maxDist) - 1;
+	std::cout << "adding: " << pointsToAdd << std::endl;
+	std::vector<Coords> res(pointsToAdd);
+	for (int i = 0; i < pointsToAdd; i++) {
+		double x { ((next.getX() - p.getX()) / (pointsToAdd + 1)) * (i + 1) + p.getX() };
+		double y { ((next.getY() - p.getY()) / (pointsToAdd + 1)) * (i + 1) + p.getY() };
+		res[i] = Coords(x, y);
+		std::cout << res[i].toString() << std::endl;
+	}
+	return res;
+}
+
+void LcpFinder::addPolygon(int polygon, std::vector<std::vector<Coords>> points, double friction, double maxDist) {
 	this->frictions[polygon] = friction;
-	int i { 1 };
+	unsigned int i { 1 };
 	Polygon triangulator { };
 	for (unsigned int ring = 0; ring < points.size(); ring++) {
-		for (Coords p : points[ring]) {
+		std::cout<<"ringsize: "<<points[ring].size()<<std::endl;
+		for (unsigned int pi = 0; pi < points[ring].size(); pi++) {
+			Coords p = points[ring][pi];
 			p.addToPolygon(polygon);
 			triangulator.addPoint(i, p.getX(), p.getY(), ring);
 			i++;
+
+			// add intermidiate points if next point is too far.
+			Coords next = (pi != points[ring].size() - 1) ? points[ring][pi + 1] : points[ring][0];
+			if (next.eucDist(&p)+0.0000001 > maxDist) {
+				for (Coords ip : this->intermidiatePoints(p, next, maxDist)) {
+					std::cout << "ip: " << ip.getX() << ":" << ip.getY() << std::endl;
+					ip.addToPolygon(polygon);
+					triangulator.addPoint(i, ip.getX(), ip.getY(), ring);
+					i++;
+				}
+			}
+
 		}
 	}
 	std::cout << "points added\n";
@@ -136,7 +168,10 @@ void LcpFinder::addPolygon(int polygon, std::vector<std::vector<Coords>> points,
 	std::cout << "init done\n";
 	triangulator.triangulation();
 	Triangles triangles = triangulator.triangles();
+	triangulator.saveAsShowme();
 	std::cout << "triangulaton done: " << triangles.size() << " triangles created" << std::endl;
+
+
 
 	for (std::list<Triangle>::iterator it = triangles.begin(); it != triangles.end(); it++) {
 		Triangle triangle = *it;
