@@ -18,7 +18,6 @@ int main() {
 	 * Minheap, parempi update operaatio
 	 *
 	 *
-	 *TODO Add maximum node distance
 	 *TODO Add points inside polygons (as stainer points?)
 	 *TODO Integrate to QGIS plugin
 	 *TODO Implement A*
