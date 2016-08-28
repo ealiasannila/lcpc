@@ -72,18 +72,14 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
 	return neighbours;
 }
 
-std::vector<Coords> LcpFinder::leastCostPath(const Coords s, const Coords e) {
+std::vector<Coords> LcpFinder::leastCostPath(Coords s, std::vector<Coords> e) {
 
 	std::tr1::unordered_set<Coords>::iterator startIt = this->coordmap.find(s);
 	const Coords* start;
 	if (startIt != coordmap.end()) {
 		start = &*startIt;
 	}
-	std::tr1::unordered_set<Coords>::iterator endIt = this->coordmap.find(e);
-	const Coords* end;
-	if (endIt != coordmap.end()) {
-		end = &*endIt;
-	}
+
 
 	start->setToStart(0);
 	struct compToStart {
@@ -114,72 +110,37 @@ std::vector<Coords> LcpFinder::leastCostPath(const Coords s, const Coords e) {
 		}
 	}
 	//update to many endpoints
-	std::cout<<"nearly\n";
-	std::vector<Coords> res { *end };
-	std::cout<<"almost\n";
-	return res;
-}
-
-std::vector<Coords> LcpFinder::intermidiatePoints(Coords p, Coords next, double maxDist) {
-	std::cout << "P: " << p.toString() << std::endl;
-	std::cout << "N: " << next.toString() << std::endl;
-	int pointsToAdd = std::ceil(p.eucDist(&next) / maxDist) - 1;
-	std::cout << "adding: " << pointsToAdd << std::endl;
-	std::vector<Coords> res(pointsToAdd);
-	for (int i = 0; i < pointsToAdd; i++) {
-		double x { ((next.getX() - p.getX()) / (pointsToAdd + 1)) * (i + 1) + p.getX() };
-		double y { ((next.getY() - p.getY()) / (pointsToAdd + 1)) * (i + 1) + p.getY() };
-		res[i] = Coords(x, y);
-		std::cout << res[i].toString() << std::endl;
-	}
-	return res;
-}
-
-void LcpFinder::addPolygon(int polygon, std::vector<std::vector<Coords>> points, double friction, double maxDist) {
-	this->frictions[polygon] = friction;
-	unsigned int i { 1 };
-	Polygon triangulator { };
-	for (unsigned int ring = 0; ring < points.size(); ring++) {
-		std::cout<<"ringsize: "<<points[ring].size()<<std::endl;
-		for (unsigned int pi = 0; pi < points[ring].size(); pi++) {
-			Coords p = points[ring][pi];
-			p.addToPolygon(polygon);
-			triangulator.addPoint(i, p.getX(), p.getY(), ring);
-			i++;
-
-			// add intermidiate points if next point is too far.
-			Coords next = (pi != points[ring].size() - 1) ? points[ring][pi + 1] : points[ring][0];
-			if (next.eucDist(&p)+0.0000001 > maxDist) {
-				for (Coords ip : this->intermidiatePoints(p, next, maxDist)) {
-					std::cout << "ip: " << ip.getX() << ":" << ip.getY() << std::endl;
-					ip.addToPolygon(polygon);
-					triangulator.addPoint(i, ip.getX(), ip.getY(), ring);
-					i++;
-				}
-			}
-
+	std::vector<Coords> res;
+	for(Coords ep : e){
+		std::tr1::unordered_set<Coords>::iterator endit = this->coordmap.find(ep);
+		if(endit != coordmap.end()){
+			res.push_back(*endit);
 		}
 	}
-	std::cout << "points added\n";
-	triangulator.addEdges();
-	std::cout << "edges added\n";
-	std::cout << triangulator.points().at(1)->id;
-	triangulator.initializate();
-	std::cout << "init done\n";
-	triangulator.triangulation();
-	Triangles triangles = triangulator.triangles();
-	triangulator.saveAsShowme();
-	std::cout << "triangulaton done: " << triangles.size() << " triangles created" << std::endl;
+	return res;
+}
 
 
+void LcpFinder::addPolygon(int polygon, std::vector<p2t::Point*> steinerPoints, std::vector<std::vector<p2t::Point*>> points, double friction) {
+	this->frictions[polygon] = friction;
+		p2t::CDT cdt { points[0] }; //Constrained Delaunay triangulator with outer edges.
 
-	for (std::list<Triangle>::iterator it = triangles.begin(); it != triangles.end(); it++) {
-		Triangle triangle = *it;
+	for (unsigned int hole = 1; hole < points.size(); hole++) {
+		cdt.AddHole(points[hole]);
+	}
+	for(p2t::Point* sp: steinerPoints){
+		cdt.AddPoint(sp);
+	}
+
+	cdt.Triangulate();
+	std::vector<p2t::Triangle*> triangles = cdt.GetTriangles();
+	for (std::vector<p2t::Triangle*>::iterator it = triangles.begin(); it != triangles.end(); it++) {
+		p2t::Triangle* triangle = *it;
 		const Coords* cp[3];
 		Coords c[3];
 		for (unsigned i = 0; i < 3; i++) {
-			Pointbase pb = *triangulator.points().at(triangle[i]);
-			c[i] = Coords(pb.x, pb.y, polygon);
+			p2t::Point* point = triangle->GetPoint(i);
+			c[i] = Coords(point->x, point->y, polygon);
 
 		}
 		// if triangle orientation is clockwise turn it to CCW
@@ -187,20 +148,13 @@ void LcpFinder::addPolygon(int polygon, std::vector<std::vector<Coords>> points,
 			Coords tmp = c[2];
 			c[2] = c[1];
 			c[1] = tmp;
-			std::cout << "changed orientation." << std::endl;
-		} else {
-			std::cout << "orientation fine" << std::endl;
 		}
-
 		for (unsigned i = 0; i < 3; i++) {
 			std::pair<std::tr1::unordered_set<Coords>::iterator, bool> p = coordmap.insert(c[i]);
 			cp[i] = &*p.first;
 			bool alreadyThere = !p.second;
 			if (alreadyThere) {
-				std::cout << "merging at " << c[i].toString() << std::endl;
 				cp[i]->addToPolygon(polygon);
-			} else {
-				std::cout << "inserted new at " << c[i].toString() << std::endl;
 			}
 		}
 		for (unsigned i = 0; i < 3; i++) {

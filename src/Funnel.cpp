@@ -68,7 +68,6 @@ Funnel Funnel::split(const Coords* o) {
  * so that o forms the endpoint of the chain being shrunk.
  */
 void Funnel::shrink(const Coords* o, std::deque<const Coords*>* chain, unsigned lastRemaining) {
-	std::cout<<lastRemaining<<"<-Last"<<std::endl;
 	while (chain->size() - 1 > lastRemaining) {
 		chain->pop_back();
 	}
@@ -95,10 +94,10 @@ int Funnel::inFirstSector(const Coords* o) {
 	int lo = o->isRight(lc.at(0), lc.at(1));
 	int ro = o->isRight(rc.at(0), rc.at(1));
 
-	if (lo == -1) {
+	if (lo != 1) {
 		return -1;
 	}
-	if (ro == 1) {
+	if (ro != -1) {
 		return 1;
 	}
 	return 0;
@@ -115,7 +114,6 @@ void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, n
 	switch (this->inFirstSector(o)) {
 	int lastRemaining;
 	case 0:
-		std::cout<<"splitting"<<std::endl;
 		funnelQueue->push_back(this->split(o));
 		neighbours->insert(std::pair<const Coords*, int>(o, polygon));
 
@@ -125,20 +123,16 @@ void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, n
 	case -1:
 		lastRemaining = this->findInChain(o, lc, 1);
 		if (lastRemaining == -1) {
-			std::cout<<"addL"<<std::endl;
 			lc.push_back(o);
 		} else {
-			std::cout<<"shrinkL"<<std::endl;
 			this->shrink(o, &lc, lastRemaining);
 		}
 		break;
 	case 1:
 		lastRemaining = this->findInChain(o, rc, -1);
 		if (lastRemaining == -1) {
-			std::cout<<"addR"<<std::endl;
 			rc.push_back(o);
 		} else {
-			std::cout<<"shrinkR"<<std::endl;
 			this->shrink(o, &rc, lastRemaining);
 		}
 		break;

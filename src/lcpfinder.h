@@ -11,9 +11,11 @@
 #include <iostream>
 #include "Coords.h"
 #include "Funnel.h"
-#include "../lib/geometry.h"
+#include "../lib/poly2tri.h"
 #include <tr1/functional>
 #include <tr1/unordered_set>
+
+
 
 struct CoordsHasher {
 	std::size_t operator()(const Coords& c) const {
@@ -31,11 +33,11 @@ private:
 	std::deque<Funnel> initFQue(const Coords* c, int polygon, nSet*neighbours);
 	void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours);
 	nSet findNeighbours(const Coords* c);
-	std::vector<Coords> intermidiatePoints(Coords p, Coords next, double maxDist);
+	std::vector<p2t::Point*> intermidiatePoints(p2t::Point p, p2t::Point next, double maxDist);
 public:
-	std::vector<Coords> leastCostPath(const Coords s, const Coords e);
-	void addPolygon(int polygon, std::vector<std::vector<Coords>> points, double friction, double maxDist);
-
+	std::tr1::unordered_set<Coords, CoordsHasher> getCoordmap(){return coordmap;}
+	std::vector<Coords> leastCostPath(Coords s, std::vector<Coords> e);
+	void addPolygon(int polygon,std::vector<p2t::Point*> steinerpoints, std::vector<std::vector<p2t::Point*>> points, double friction);
 };
 
 
