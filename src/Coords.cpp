@@ -64,7 +64,11 @@ void Coords::setPred(const Coords* pred) const{
 
 std::string Coords::toString() const {
 	std::stringstream sstm;
-	sstm << "X: " << x << " Y: " << y;
+	sstm << "X: " << x << " Y: " << y <<" Polygons: ";
+
+	for(std::pair<int, nContainer> p : this->leftNeighbours){
+		sstm<<p.first<<" ";
+	}
 	return sstm.str();
 }
 int Coords::isRight(const Coords* c1, const Coords* c2) const {
@@ -76,14 +80,6 @@ int Coords::isRight(const Coords* c1, const Coords* c2) const {
 		return 1;
 	}
 	return 0;
-}
-
-double Coords::eucDistSquared(const Coords* c1) const{
-	return pow(c1->getX() - x, 2) + pow(c1->getY() - y, 2);
-}
-
-double Coords::eucDist(const Coords* c1) const {
-	return sqrt(this->eucDistSquared(c1));
 }
 
 bool Coords::operator==(const Coords& c) const {

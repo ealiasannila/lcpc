@@ -44,8 +44,6 @@ public:
 		return y;
 	}
 	int isRight(const Coords* c1, const Coords* c2) const;
-	double eucDist(const Coords* c1) const;
-	double eucDistSquared(const Coords* c1) const;
 	nContainer getRightNeighbours(int polygon) const;
 	nContainer getLeftNeighbours(int polygon) const;
 	allNeighIter getAllLeftN() const;
