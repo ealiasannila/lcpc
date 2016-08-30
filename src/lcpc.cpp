@@ -55,9 +55,9 @@ int main() {
 	//finder.addPolygon(1, p2, 1, 0.5);
 
 	std::vector<Coords> targets{Coords(1,2)};
-	std::vector<Coords> path = finder.leastCostPath(Coords(0.5, 0.5), targets);
+	targets = finder.leastCostPath(Coords(0.5, 0.5), targets);
 	std::cout << "lcp done\n";
-	for (Coords goal : path) {
+	for (Coords goal : targets) {
 		while (goal.getPred() != 0) {
 			std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << std::endl;
 			goal = *goal.getPred();
