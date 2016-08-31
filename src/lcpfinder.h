@@ -45,8 +45,8 @@ public:
 	void addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction);
 	void addSteinerPoints(std::vector<p2t::Point*> steinerpoints, int polygon);
 	void addSteinerPoint(p2t::Point* steinerpoint, int polygon);
-
 	void triangulate(int polygon);
+    ~LcpFinder();
 };
 
 

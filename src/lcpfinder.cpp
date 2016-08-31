@@ -97,7 +97,17 @@ std::vector<Coords> LcpFinder::leastCostPath(Coords s, std::vector<Coords> e) {
 
 	minheap.push(start);
 
+    int handled = 0;
+    int old = 0;
+    int total = this->coordmap.size();
 	while (!minheap.empty()) {
+        int percentage = handled / total;
+        if(percentage!=old){
+            old = percentage;
+            std::cout<<"Searching..."<<percentage<<"% done\n";
+        }
+        handled++;
+
 		const Coords* node = minheap.top();
 		minheap.pop();
 		nSet neighbours = findNeighbours(node);
@@ -189,7 +199,24 @@ void LcpFinder::triangulate(int polygon) {
 			}
 			cp[i]->addNeighbours(cp[l], cp[r], polygon);
 		}
-	}
+    }
+}
+
+LcpFinder::~LcpFinder()
+{
+    for(std::vector<std::vector<p2t::Point*>> polygon : polygons){
+        for (std::vector<p2t::Point*> ring : polygon){
+            for(p2t::Point* point :ring){
+                delete point;
+            }
+        }
+    }
+    for (std::pair<int, std::vector<p2t::Point*>> polygon : targetPoints){
+        for(p2t::Point* point :polygon.second){
+            delete point;
+        }
+    }
+
 }
 
 void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction) {
