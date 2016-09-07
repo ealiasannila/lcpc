@@ -33,6 +33,7 @@ private:
 	std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
 	std::map<int, std::vector<p2t::Point*>> targetPoints;
 	std::vector<double> frictions;
+        p2t::Point* startPoint;
 
 	const Coords* getOpposing(const Coords* l, const Coords* r, int polygon);
 	std::deque<Funnel> initFQue(const Coords* c, int polygon, nSet*neighbours);
@@ -41,9 +42,9 @@ private:
 	std::vector<p2t::Point*> intermidiatePoints(p2t::Point p, p2t::Point next, double maxDist);
 public:
 	std::tr1::unordered_set<Coords, CoordsHasher> getCoordmap(){return coordmap;}
-	std::vector<Coords> leastCostPath(Coords s, std::vector<Coords> e);
+	std::vector<Coords> leastCostPath();
 	void addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction);
-	void addSteinerPoints(std::vector<p2t::Point*> steinerpoints, int polygon);
+        void addStartPoint(p2t::Point* start, int polygon);
 	void addSteinerPoint(p2t::Point* steinerpoint, int polygon);
 	void triangulate(int polygon);
     ~LcpFinder();

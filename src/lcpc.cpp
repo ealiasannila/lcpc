@@ -16,24 +16,24 @@
 #include <gdal_priv.h>
 #include <gdal/ogrsf_frmts.h>
 
-std::pair<p2t::Point*,p2t::Point*> readCostSurface(char* costSurface, char* targets, char* start, LcpFinder finder) {
+void readCostSurface(const char* costSurface,const char* targets,const char* start, LcpFinder finder) {
     OGRDataSource *csDS;
     csDS = OGRSFDriverRegistrar::Open(costSurface);
     if (csDS == NULL) {
         std::cout << "COST SURFACE NOT FOUND!\n";
-        return -1;
+        return;
     }
     OGRDataSource *targetDS;
     targetDS = OGRSFDriverRegistrar::Open(targets);
     if (targetDS == NULL) {
         std::cout << "TARGET POINTS NOT FOUND!\n";
-        return -1;
+        return;
     }
     OGRDataSource *startDS;
     startDS = OGRSFDriverRegistrar::Open(start);
     if (startDS == NULL) {
         std::cout << "START POINT NOT FOUND!\n";
-        return -1;
+        return;
     }
 
     OGRLayer* csLr = csDS->GetLayer(0);
@@ -51,7 +51,19 @@ std::pair<p2t::Point*,p2t::Point*> readCostSurface(char* costSurface, char* targ
     OGRGeometry* startGeom = startFtre->GetGeometryRef();
     OGRPoint* startPoint;
     p2t::Point* startp2t;
-    std::vector<p2t::Point*> targetp2t;
+    std::vector<OGRPoint*> targetOGRPoints;
+
+    while ((targetFtre = targetLr->GetNextFeature()) != NULL) {
+        OGRGeometry* targetGeom = targetFtre->GetGeometryRef();
+        if (targetGeom != NULL
+                && wkbFlatten(targetGeom->getGeometryType()) == wkbPoint) {
+            OGRPoint* targetPoint = (OGRPoint*) targetGeom;
+            targetOGRPoints.push_back(targetPoint);
+        } else {
+            printf("no target geometry\n");
+        }
+
+    }
     if (startGeom != NULL
             && wkbFlatten(startGeom->getGeometryType()) == wkbPoint) {
         startPoint = (OGRPoint*) startGeom;
@@ -59,6 +71,9 @@ std::pair<p2t::Point*,p2t::Point*> readCostSurface(char* costSurface, char* targ
     } else {
         printf("no start geometry\n");
     }
+
+
+
     int pIdx = 0;
     while ((csFtre = csLr->GetNextFeature()) != NULL) {
         OGRGeometry* csGeometry = csFtre->GetGeometryRef();
@@ -66,6 +81,10 @@ std::pair<p2t::Point*,p2t::Point*> readCostSurface(char* costSurface, char* targ
                 && wkbFlatten(csGeometry->getGeometryType()) == wkbPolygon) {
             OGRPolygon *csPolygon = (OGRPolygon *) csGeometry;
             OGRLinearRing* extRing = csPolygon->getExteriorRing();
+            if (extRing->isClockwise()) {
+                extRing->reverseWindingOrder();
+            }
+
 
             std::vector<std::vector < p2t::Point*>> polygon;
             polygon.push_back(std::vector<p2t::Point*>{});
@@ -78,18 +97,30 @@ std::pair<p2t::Point*,p2t::Point*> readCostSurface(char* costSurface, char* targ
             for (unsigned int ri = 0; ri < csPolygon->getNumInteriorRings(); ri++) {
                 polygon.push_back(std::vector<p2t::Point*>{});
                 OGRLinearRing* intRing = csPolygon->getInteriorRing(ri);
+                if (intRing->isClockwise()) {
+                    intRing->reverseWindingOrder();
+                }
                 for (unsigned int i = 0; i < intRing->getNumPoints(); i++) {
                     p2t::Point* point = new p2t::Point(extRing->getX(i), extRing->getY(i));
                     polygon[ri + 1].push_back(point);
                 }
-                intermidiatePoints(&polygon, 1000);
-                finder.addPolygon(polygon, 1);
             }
 
+            intermidiatePoints(&polygon, 1000);
+            finder.addPolygon(polygon, 1);
+
             if (csPolygon->IsPointOnSurface(startPoint)) {
-                finder.addSteinerPoint(startp2t, pIdx);
+                finder.addStartPoint(startp2t, pIdx);
+                std::cout<<"ADDING START POINT\n";
             }
-            
+
+            for (int i = 0; i < targetOGRPoints.size(); i++) {
+                if (csPolygon->IsPointOnSurface(targetOGRPoints[i])) {
+                    finder.addSteinerPoint(new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY()), pIdx);
+                }
+            }
+
+
             // ADD TARGET POINTS TO TARGETS!
             pIdx++;
         } else {
@@ -97,7 +128,6 @@ std::pair<p2t::Point*,p2t::Point*> readCostSurface(char* costSurface, char* targ
         }
     }
     OGRDataSource::DestroyDataSource(csDS);
-    return std::pair<p2t::Point*,std::vector<p2t::Point*>(startp2t, targetp2t);
 }
 
 int main() {
@@ -117,7 +147,7 @@ int main() {
 
     OGRRegisterAll();
     LcpFinder finder{};
-    p2t::Point* sp = readCostSurface("testarea.shp","targets.shp","start.shp", finder);
+    readCostSurface("testarea.shp", "targets.shp", "start.shp", finder);
 
 
 
@@ -135,10 +165,10 @@ int main() {
     }
      */
     std::cout << "HALFWAY\n";
-    //finder.addPolygon(1, p2, 1, 0.5);
+    finder.leastCostPath();
 
-    std::vector<Coords> targets{Coords(1, 2)};
-    targets = finder.leastCostPath(Coords(), targets);
+    std::cout << "HALFWAY\n";
+/*    std::vector<Coords> targets = finder.leastCostPath();
     std::cout << "lcp done\n";
     for (Coords goal : targets) {
         while (goal.getPred() != 0) {
@@ -148,7 +178,7 @@ int main() {
         std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << std::endl;
 
     }
-
+*/
     return 0;
 }
 
