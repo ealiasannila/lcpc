@@ -29,6 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdexcept>
+#include <iostream>
 #include "sweep.h"
 #include "sweep_context.h"
 #include "advancing_front.h"
@@ -767,7 +768,8 @@ Point& Sweep::NextFlipPoint(Point& ep, Point& eq, Triangle& ot, Point& op)
     return *ot.PointCW(op);
   } else{
     //throw new RuntimeException("[Unsupported] Opposing point on constrained edge");
-    assert(0);
+      std::cout<<"EP: "<<ep.x<<","<<ep.y<<"\neq: "<<eq.x<<","<<eq.y<<"\nop: "<<op.x<<","<<op.y<<std::endl;
+      assert(0);
   }
 }
 

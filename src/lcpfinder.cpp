@@ -77,10 +77,8 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
 }
 
 std::vector<Coords> LcpFinder::leastCostPath() {
-    std::cout<<this->startPoint;
-    return std::vector<Coords>{};
-    std::tr1::unordered_set<Coords>::iterator startIt = this->coordmap.find(Coords(this->startPoint->x, this->startPoint->y));
-
+    std::tr1::unordered_set<Coords>::iterator startIt = this->coordmap.find(Coords(this->startPoint2.x, this->startPoint2.y));
+    std::cout << "this.startPoint2:" << this->startPoint2.x << "," << this->startPoint2.y << std::endl;
     const Coords* start;
     if (startIt != coordmap.end()) {
         start = &*startIt;
@@ -246,5 +244,7 @@ void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
 
 void LcpFinder::addStartPoint(p2t::Point* startPoint, int polygon) {
     this->addSteinerPoint(startPoint, polygon);
-    this->startPoint = startPoint;
+    this->startPoint2 = *startPoint;
+    std::cout << "this.startPoint2:" << this->startPoint2.x << "," << this->startPoint2.y << std::endl;
+
 }

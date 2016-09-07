@@ -16,7 +16,7 @@
 #include <gdal_priv.h>
 #include <gdal/ogrsf_frmts.h>
 
-void readCostSurface(const char* costSurface,const char* targets,const char* start, LcpFinder finder) {
+void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder) {
     OGRDataSource *csDS;
     csDS = OGRSFDriverRegistrar::Open(costSurface);
     if (csDS == NULL) {
@@ -72,8 +72,6 @@ void readCostSurface(const char* costSurface,const char* targets,const char* sta
         printf("no start geometry\n");
     }
 
-
-
     int pIdx = 0;
     while ((csFtre = csLr->GetNextFeature()) != NULL) {
         OGRGeometry* csGeometry = csFtre->GetGeometryRef();
@@ -85,14 +83,18 @@ void readCostSurface(const char* costSurface,const char* targets,const char* sta
                 extRing->reverseWindingOrder();
             }
 
-
             std::vector<std::vector < p2t::Point*>> polygon;
             polygon.push_back(std::vector<p2t::Point*>{});
 
-            for (unsigned int i = 0; i < extRing->getNumPoints(); i++) {
+            int ringsize = extRing->getNumPoints();
+
+
+            for (unsigned int i = 0; i < ringsize; i++) {
                 p2t::Point* point = new p2t::Point(extRing->getX(i), extRing->getY(i));
                 polygon[0].push_back(point);
+                //std::cout<<"adding: "<<point->x<<","<<point->y<<std::endl;
             }
+            polygon[0].pop_back();
 
             for (unsigned int ri = 0; ri < csPolygon->getNumInteriorRings(); ri++) {
                 polygon.push_back(std::vector<p2t::Point*>{});
@@ -100,33 +102,37 @@ void readCostSurface(const char* costSurface,const char* targets,const char* sta
                 if (intRing->isClockwise()) {
                     intRing->reverseWindingOrder();
                 }
-                for (unsigned int i = 0; i < intRing->getNumPoints(); i++) {
+                ringsize = intRing->getNumPoints();
+                for (unsigned int i = 0; i < ringsize; i++) {
                     p2t::Point* point = new p2t::Point(extRing->getX(i), extRing->getY(i));
                     polygon[ri + 1].push_back(point);
                 }
+                polygon[ri + 1].pop_back();
             }
+
 
             intermidiatePoints(&polygon, 1000);
-            finder.addPolygon(polygon, 1);
+            finder->addPolygon(polygon, 1);
 
             if (csPolygon->IsPointOnSurface(startPoint)) {
-                finder.addStartPoint(startp2t, pIdx);
-                std::cout<<"ADDING START POINT\n";
+                finder->addStartPoint(startp2t, pIdx);
+                std::cout << "ADDING START POINT\n";
             }
-
             for (int i = 0; i < targetOGRPoints.size(); i++) {
                 if (csPolygon->IsPointOnSurface(targetOGRPoints[i])) {
-                    finder.addSteinerPoint(new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY()), pIdx);
+                    finder->addSteinerPoint(new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY()), pIdx);
                 }
             }
 
 
             // ADD TARGET POINTS TO TARGETS!
             pIdx++;
+
         } else {
             printf("no polygon geometry\n");
         }
     }
+
     OGRDataSource::DestroyDataSource(csDS);
 }
 
@@ -147,38 +153,96 @@ int main() {
 
     OGRRegisterAll();
     LcpFinder finder{};
-    readCostSurface("testarea.shp", "targets.shp", "start.shp", finder);
-
-
-
-    /*
-
-    std::vector<p2t::Point*> stp = {new p2t::Point
-        {0.5, 0.5}};
-
-
-    finder.addSteinerPoints(stp, 0);
-    std::cout << "Steiner added\n";
-    std::tr1::unordered_set<Coords, CoordsHasher, std::equal_to<Coords>, std::allocator<Coords> > cmap = finder.getCoordmap();
-    for (Coords c : cmap) {
-        std::cout << c.toString() << std::endl;
-    }
-     */
-    std::cout << "HALFWAY\n";
+    readCostSurface("testpolygon.shp", "targets.shp", "start.shp", &finder);
     finder.leastCostPath();
 
-    std::cout << "HALFWAY\n";
-/*    std::vector<Coords> targets = finder.leastCostPath();
-    std::cout << "lcp done\n";
-    for (Coords goal : targets) {
-        while (goal.getPred() != 0) {
-            std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << std::endl;
-            goal = *goal.getPred();
+    std::cout << "LCP SEARCH DONE\n";
+
+
+    std::map<const Coords*, const Coords*> ancestors;
+    std::map<const Coords*, std::vector<double>> x;
+    std::map<const Coords*, std::vector<double>> y;
+
+
+    OGRLayer *poLayer;
+    poLayer = poDS->CreateLayer("point_out", NULL, wkbLineString, NULL);
+    if (poLayer == NULL) {
+        printf("Layer creation failed.\n");
+        exit(1);
+    }
+
+    SHPHandle hSHP = SHPCreate(outFile.toStdString().c_str(), SHPT_ARC);
+    std::cout << "handle created\n";
+
+
+    std::cout << "Initial insert:\n";
+    for (const Coords* point : results) {
+        ancestors[point] = point;
+        x[point] = std::vector<double>{point->getX()};
+        y[point] = std::vector<double>{point->getY()};
+        std::cout << point->toString() << std::endl;
+    }
+
+    std::cout << "Starting loop:\n";
+    while (!results.empty()) {
+        const Coords* point = results.front();
+        const Coords* pred = point->getPred();
+
+        std::cout << "Po: " << point->toString() << std::endl;
+        std::cout << "Pr: " << point->toString() << std::endl;
+
+
+        results.pop_front();
+        if (pred == 0) {
+            continue;
         }
-        std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << std::endl;
+
+        const Coords* ancestor = ancestors[point];
+        std::cout << "An: " << point->toString() << std::endl;
+
+        if (ancestors.find(pred) != ancestors.end()) {
+            ancestors[pred] = pred;
+            x[pred] = std::vector<double>{pred->getX()};
+            y[pred] = std::vector<double>{pred->getY()};
+            std::cout << "Adding point to pred: " << pred->toString() << std::endl;
+        } else {
+            ancestors[pred] = ancestor;
+            results.push_back(pred);
+        }
+        x[ancestor].push_back(pred->getX());
+        y[ancestor].push_back(pred->getY());
+        std::cout << "Adding point to ancestor: " << ancestor->toString() << std::endl;
 
     }
-*/
+    std::cout << "Paths mapped\n";
+    for (std::pair<const Coords*, std::vector<double>> xs : x) {
+        std::vector<double> ys = y[xs.first];
+
+        std::cout << "X pointer\n";
+        double *xp = &(xs.second[0]);
+        std::cout << "Y pointer\n";
+        double *yp = &(ys[0]);
+
+        std::cout << "Create SHP\n";
+        SHPObject* psObject = SHPCreateSimpleObject(SHPT_ARC, xs.second.size(), xp, yp, NULL);
+        std::cout << "Write SHP\n";
+        SHPWriteObject(hSHP, -1, psObject);
+        SHPDestroyObject(psObject);
+    }
+    SHPClose(hSHP);
+
+    return 0;
+    /*    std::vector<Coords> targets = finder.leastCostPath();
+        std::cout << "lcp done\n";
+        for (Coords goal : targets) {
+            while (goal.getPred() != 0) {
+                std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << std::endl;
+                goal = *goal.getPred();
+            }
+            std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << std::endl;
+
+        }
+     */
     return 0;
 }
 
