@@ -16,6 +16,7 @@
 #include "../lib/poly2tri.h"
 #include <tr1/functional>
 #include <tr1/unordered_set>
+#include <ctime>
 
 struct CoordsHasher {
 
@@ -40,6 +41,16 @@ private:
     nSet findNeighbours(const Coords* c);
     std::vector<p2t::Point*> intermidiatePoints(p2t::Point p, p2t::Point next, double maxDist);
 public:
+    double finder_secs = 0;
+    double triangle_secs = 0;
+    double heap_secs = 0;
+    double preliminaries = 0;
+    double printing_secs = 0;
+    double nfinding_secs = 0;
+    double funnel_secs = 0;
+    double fq_secs = 0;
+    double base_secs = 0;
+    double react_secs = 0;
 
     std::tr1::unordered_set<Coords, CoordsHasher> getCoordmap() {
         return coordmap;

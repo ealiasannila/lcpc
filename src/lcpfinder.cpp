@@ -7,7 +7,7 @@
 
 #include "lcpfinder.h"
 #include <stdexcept>      // std::out_of_range
-
+#include "defs.h"
 /*
  * Finds opposing by looking up intersection of the immidiate neighbours of either end of the base.
  * This can be either 1 or 2 vertices, of whcih 1 or 0 may be relevant. (irrelevant vertice is already inside funnel)
@@ -54,31 +54,47 @@ std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*neighb
 
 void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours) {
     std::deque<Funnel> funnelQue = initFQue(c, polygon, neighbours);
+    std::clock_t begin = std::clock();
 
+    std::pair<const Coords*, const Coords*> base;
+    const Coords* o;
     while (!funnelQue.empty()) {
+        std::clock_t queb = std::clock();
         Funnel f = funnelQue.front();
         funnelQue.pop_front();
-        std::pair<const Coords*, const Coords*> base = f.getBase();
-        const Coords* o = getOpposing(base.first, base.second, polygon);
+        this->fq_secs += double(std::clock() - queb) / CLOCKS_PER_SEC;
+
+        base = f.getBase();
+        std::clock_t bb = std::clock();
+        o = getOpposing(base.first, base.second, polygon);
+        this->base_secs += double(std::clock() - bb) / CLOCKS_PER_SEC;
+
         if (o != 0) {
+            std::clock_t rb = std::clock();
             f.reactToOpposite(o, &funnelQue, neighbours, polygon);
+            this->react_secs += double(std::clock() - rb) / CLOCKS_PER_SEC;
+
             funnelQue.push_back(f);
         }
+
     }
+    this->funnel_secs += double(std::clock() - begin) / CLOCKS_PER_SEC;
 }
 
 nSet LcpFinder::findNeighbours(const Coords* c) {
+    std::clock_t begin = std::clock();
     nSet neighbours{};
     allNeighIter polyIt = c->getAllLeftN(); //Only keys area interesting here, first = begin iterator, second end iterator
     for (allNContainer::iterator it = polyIt.first; it != polyIt.second; it++) {
         findNeighboursInPolygon(c, it->first, &neighbours);
     }
+    this->nfinding_secs += double(std::clock() - begin) / CLOCKS_PER_SEC;
     return neighbours;
 }
 
 std::deque<const Coords*> LcpFinder::leastCostPath() {
+
     std::tr1::unordered_set<Coords>::iterator startIt = this->coordmap.find(Coords(this->startPoint2.x, this->startPoint2.y));
-    std::cout << "this.startPoint2:" << this->startPoint2.x << "," << this->startPoint2.y << std::endl;
     const Coords* start;
     if (startIt != coordmap.end()) {
         start = &*startIt;
@@ -103,14 +119,20 @@ std::deque<const Coords*> LcpFinder::leastCostPath() {
     int handled = 0;
     int old = 0;
     int total = this->coordmap.size();
+
+
+
+    std::clock_t begin = std::clock();
+
     while (!minheap.empty()) {
-        int percentage = handled / total;
+        std::clock_t pstart = std::clock();
+        int percentage = handled * 100 / total;
         if (percentage != old) {
             old = percentage;
             std::cout << "Searching..." << percentage << "% done\n";
         }
         handled++;
-
+        this->printing_secs += double(std::clock() - pstart) / CLOCKS_PER_SEC;
         const Coords* node = minheap.top();
         minheap.pop();
         nSet neighbours = findNeighbours(node);
@@ -134,7 +156,7 @@ std::deque<const Coords*> LcpFinder::leastCostPath() {
     std::deque<const Coords*> res;
     for (std::pair<int, std::vector < p2t::Point*>> endpoints : this->targetPoints) {
         for (p2t::Point* ep : endpoints.second) {
-            if(ep->x == this->startPoint2.x and ep->y == this->startPoint2.y){
+            if (ep->x == this->startPoint2.x and ep->y == this->startPoint2.y) {
                 continue;
             }
             std::tr1::unordered_set<Coords>::iterator it = this->coordmap.find(Coords(ep->x, ep->y));
@@ -143,11 +165,28 @@ std::deque<const Coords*> LcpFinder::leastCostPath() {
             }
         }
     }
+    std::clock_t end = std::clock();
+    this->finder_secs = double(end - begin) / CLOCKS_PER_SEC;
+    this->finder_secs -= this->triangle_secs;
+    this->finder_secs -= minheap.heaptime;
+    this->finder_secs -= this->printing_secs;
+    this->finder_secs -= this->nfinding_secs;
+    this->heap_secs = minheap.heaptime;
+
     return res;
 }
 
 void LcpFinder::triangulate(int polygon) {
-    std::vector<std::vector < p2t::Point*>> points = this->polygons.at(polygon);
+    std::clock_t begin = std::clock();
+
+    std::vector<std::vector < p2t::Point*>> points;
+    try {
+        points = this->polygons.at(polygon);
+    } catch (const std::out_of_range& oor) {
+        std::cout << "EXCEPTION WHEN GETTING POLYGON\n";
+        std::cout << "polygon:" << polygon << std::endl;
+        exit(1);
+    }
     p2t::CDT cdt{points[0]}; //Constrained Delaunay triangulator with outer edges.
     for (unsigned int hole = 1; hole < points.size(); hole++) {
         cdt.AddHole(points[hole]);
@@ -199,6 +238,9 @@ void LcpFinder::triangulate(int polygon) {
             cp[i]->addNeighbours(cp[l], cp[r], polygon);
         }
     }
+    std::clock_t end = std::clock();
+    this->triangle_secs += double(end - begin) / CLOCKS_PER_SEC;
+
 }
 
 LcpFinder::~LcpFinder() {
@@ -237,12 +279,19 @@ void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
     } else {
         this->targetPoints[polygon].push_back(steinerpoint);
     }
-    this->coordmap.insert(Coords(steinerpoint->x, steinerpoint->y, polygon));
+    if (polygon == 975) {
+        std::cout << "ADDING HERE\n";
+    }
+    std::pair < std::tr1::unordered_set<Coords>::iterator, bool> success = this->coordmap.insert(Coords(steinerpoint->x, steinerpoint->y, polygon));
+    if (!success.second) {
+        std::cout << "DID NOT INSERT\n";
+        std::cout << success.first->toString() << std::endl;
+        std::cout << Coords(steinerpoint->x, steinerpoint->y, polygon).toString() << std::endl;
+    }
 }
 
 void LcpFinder::addStartPoint(p2t::Point* startPoint, int polygon) {
     this->addSteinerPoint(startPoint, polygon);
     this->startPoint2 = *startPoint;
-    std::cout << "this.startPoint2:" << this->startPoint2.x << "," << this->startPoint2.y << std::endl;
 
 }

@@ -15,12 +15,30 @@
 #include <gdal/gdal.h>
 #include <gdal_priv.h>
 #include <gdal/ogrsf_frmts.h>
+#include <ctime>
+#include <string.h>
+#include <stdlib.h>
 
-void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder) {
+bool inside(OGRPolygon* polygon, OGRPoint* point) {
+    if (polygon->getExteriorRing()->isPointInRing(point)) {
+        for (unsigned int ri = 0; ri < polygon->getNumInteriorRings(); ri++) {
+            if (polygon->getInteriorRing(ri)->isPointInRing(point)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder, const char* frictionField, const char* maxDist) {
+    double maxd = atof(maxDist);
     OGRDataSource *csDS;
     csDS = OGRSFDriverRegistrar::Open(costSurface);
     if (csDS == NULL) {
-        std::cout << "COST SURFACE NOT FOUND!\n";
+
+        std::cout << costSurface;
+        std::cout << " COST SURFACE NOT FOUND!\n";
         return;
     }
     OGRDataSource *targetDS;
@@ -77,6 +95,7 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
         printf("no start geometry\n");
     }
 
+
     int pIdx = 0;
     OGRFeature * csFtre;
     while ((csFtre = csLr->GetNextFeature()) != NULL) {
@@ -85,6 +104,7 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
                 && wkbFlatten(csGeometry->getGeometryType()) == wkbPolygon) {
             OGRPolygon *csPolygon = (OGRPolygon *) csGeometry;
             OGRLinearRing* extRing = csPolygon->getExteriorRing();
+
             if (extRing->isClockwise()) {
                 extRing->reverseWindingOrder();
             }
@@ -98,7 +118,6 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
             for (unsigned int i = 0; i < ringsize; i++) {
                 p2t::Point* point = new p2t::Point(extRing->getX(i), extRing->getY(i));
                 polygon[0].push_back(point);
-                //std::cout<<"adding: "<<point->x<<","<<point->y<<std::endl;
             }
             delete polygon[0].back();
             polygon[0].pop_back();
@@ -111,30 +130,29 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
                     intRing->reverseWindingOrder();
                 }
                 ringsize = intRing->getNumPoints();
+
                 for (unsigned int i = 0; i < ringsize; i++) {
-                    p2t::Point* point = new p2t::Point(extRing->getX(i), extRing->getY(i));
+                    p2t::Point* point = new p2t::Point(intRing->getX(i), intRing->getY(i));
                     polygon[ri + 1].push_back(point);
                 }
-                delete polygon[ri+1].back();
+                delete polygon[ri + 1].back();
                 polygon[ri + 1].pop_back();
             }
 
+            intermidiatePoints(&polygon, maxd);
 
-            intermidiatePoints(&polygon, 1000);
-            finder->addPolygon(polygon, 1);
+            finder->addPolygon(polygon, csFtre->GetFieldAsDouble(frictionField));
 
-            if (csPolygon->IsPointOnSurface(startPoint)) {
+            if (inside(csPolygon, startPoint)) {
                 finder->addStartPoint(startp2t, pIdx);
-                std::cout << "ADDING START POINT\n";
             }
             for (int i = 0; i < targetOGRPoints.size(); i++) {
-                if (csPolygon->IsPointOnSurface(targetOGRPoints[i])) {
+                if (inside(csPolygon, targetOGRPoints[i])) {
                     finder->addSteinerPoint(new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY()), pIdx);
                 }
             }
 
 
-            // ADD TARGET POINTS TO TARGETS!
             pIdx++;
 
         } else {
@@ -172,19 +190,7 @@ void readCostSurfaceDummy(const char* costSurface, const char* targets, const ch
     finder->addSteinerPoint(new p2t::Point(0.7, 0.7), 0);
 }
 
-int main() {
-
-    /*
-     FIX MEMORY LEAK
-     */
-
-    OGRRegisterAll();
-    LcpFinder finder{};
-    readCostSurface("testpolygon.shp", "targets.shp", "start.shp", &finder);
-    //readCostSurfaceDummy("testpolygon.shp", "targets.shp", "start.shp", &finder);
-    std::deque<const Coords*> results = finder.leastCostPath();
-
-    std::cout << "LCP SEARCH DONE\n";
+void writeShapeFile(std::deque<const Coords*> results, std::string outputfile) {
 
     const char *pszDriverName = "ESRI Shapefile";
     OGRSFDriver *poDriver;
@@ -199,14 +205,13 @@ int main() {
 
 
     OGRDataSource *poDS;
-    std::remove("output.shp");
-    std::remove("output.shx");
-    std::remove("output.prj");
-    std::remove("output.dbf");
+    std::remove((outputfile + ".shp").c_str());
+    std::remove((outputfile + ".shx").c_str());
+    std::remove((outputfile + ".prj").c_str());
+    std::remove((outputfile + ".dbf").c_str());
 
-    poDS = poDriver->CreateDataSource("output.shp", NULL);
+    poDS = poDriver->CreateDataSource((outputfile + ".shp").c_str(), NULL);
 
-    std::cout << "PODS:" << poDS << std::endl;
     if (poDS == NULL) {
         printf("Creation of output file failed.\n");
         exit(1);
@@ -220,11 +225,26 @@ int main() {
         exit(1);
     }
 
-    OGRFieldDefn oField("cost_end", OFTReal);
-    oField.SetPrecision(4);
+    OGRFieldDefn cField("cost_end", OFTReal);
+    cField.SetPrecision(2);
 
 
-    if (poLayer->CreateField(&oField) != OGRERR_NONE) {
+    OGRFieldDefn xField("x", OFTReal);
+    xField.SetPrecision(2);
+
+    OGRFieldDefn yField("y", OFTReal);
+    yField.SetPrecision(2);
+
+
+    if (poLayer->CreateField(&cField) != OGRERR_NONE) {
+        printf("Creating Cost field failed.\n");
+        exit(1);
+    }
+    if (poLayer->CreateField(&xField) != OGRERR_NONE) {
+        printf("Creating Cost field failed.\n");
+        exit(1);
+    }
+    if (poLayer->CreateField(&yField) != OGRERR_NONE) {
         printf("Creating Cost field failed.\n");
         exit(1);
     }
@@ -232,43 +252,44 @@ int main() {
     std::map<const Coords*, const Coords*> ancestors;
     std::map<const Coords*, OGRLineString*> geom;
 
+    struct compToStart {
+
+        bool operator()(const Coords* x, const Coords* y) const {
+            return ((x->getToStart()) < (y->getToStart()));
+        }
+    } compare{};
+    MinHeap<const Coords*, compToStart> minheap(compare);
+
+
 
     std::cout << "Initial insert:\n";
     for (const Coords* point : results) {
+        minheap.push(point);
         ancestors[point] = point;
         geom[point] = new OGRLineString{};
         geom[point]->addPoint(point->getX(), point->getY());
         std::cout << point->toString() << std::endl;
     }
 
-    std::cout << "Starting loop:\n";
-    while (!results.empty()) {
-        const Coords* point = results.front();
+    while (!minheap.empty()) {
+        const Coords* point = minheap.top();
         const Coords* pred = point->getPred();
-
-        std::cout << "Po: " << point->toString() << std::endl;
-        std::cout << "Pr: " << point->toString() << std::endl;
-
-
-        results.pop_front();
+        minheap.pop();
         if (pred == 0) {
             continue;
         }
 
         const Coords* ancestor = ancestors[point];
-        std::cout << "An: " << point->toString() << std::endl;
 
-        if (ancestors.find(pred) != ancestors.end()) {
+        if (ancestors.find(pred) != ancestors.end() and pred->getPred() != 0) {
             ancestors[pred] = pred;
             geom[pred] = new OGRLineString{};
             geom[pred]->addPoint(pred->getX(), pred->getY());
-            std::cout << "Adding point to pred: " << pred->toString() << std::endl;
         } else {
             ancestors[pred] = ancestor;
-            results.push_back(pred);
+            minheap.push(pred);
         }
         geom[ancestor]->addPoint(pred->getX(), pred->getY());
-        std::cout << "Adding point to ancestor: " << ancestor->toString() << std::endl;
 
     }
     std::cout << "Paths mapped\n";
@@ -280,6 +301,9 @@ int main() {
 
         poFeature = OGRFeature::CreateFeature(poLayer->GetLayerDefn());
         poFeature->SetField("cost_end", ls.first->getToStart());
+        poFeature->SetField("x", ls.first->getX());
+        poFeature->SetField("y", ls.first->getY());
+
 
         poFeature->SetGeometry(ls.second);
 
@@ -289,10 +313,33 @@ int main() {
         }
 
         OGRFeature::DestroyFeature(poFeature);
-        std::cout << "deleting";
         delete ls.second;
     }
 
     OGRDataSource::DestroyDataSource(poDS);
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 7) {
+        std::cout << "Invalid arguments provided\n";
+        std::cout << "Correct form is lcpc cost_surface.shp target.shp start.shp name_of_friction_field output_file_name_without_shp_extension max_distance_between_nodes\n";
+        return 0;
+    }
+
+    OGRRegisterAll();
+    LcpFinder finder{};
+    readCostSurface(argv[1], argv[2], argv[3], &finder, argv[4], argv[6]);
+    //readCostSurfaceDummy("testpolygon.shp", "targets.shp", "start.shp", &finder);
+    std::cout << "READ SURFACE DONE\n";
+
+    std::deque<const Coords*> results = finder.leastCostPath();
+
+    std::cout << "TIME SPENT IN FUNNELALGORITHM: " << finder.funnel_secs << " SECONDS\n";
+    std::cout << "-funnelqueing: " << finder.fq_secs << " SECONDS\n";
+    std::cout << "-getting opposing: " << finder.base_secs << " SECONDS\n";
+    std::cout << "-reacting: " << finder.react_secs << " SECONDS\n";
+
+    writeShapeFile(results, argv[5]);
+    std::cout << "All done!\n";
     return 0;
 }
