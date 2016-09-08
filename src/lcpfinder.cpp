@@ -76,7 +76,7 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
     return neighbours;
 }
 
-std::vector<Coords> LcpFinder::leastCostPath() {
+std::deque<const Coords*> LcpFinder::leastCostPath() {
     std::tr1::unordered_set<Coords>::iterator startIt = this->coordmap.find(Coords(this->startPoint2.x, this->startPoint2.y));
     std::cout << "this.startPoint2:" << this->startPoint2.x << "," << this->startPoint2.y << std::endl;
     const Coords* start;
@@ -131,19 +131,17 @@ std::vector<Coords> LcpFinder::leastCostPath() {
 
     std::cout << "search done!\n";
     //update to many endpoints
-    std::vector<Coords> res;
-    for (std::pair<int, std::vector < p2t::Point*>> polygon : this->targetPoints) {
-        for (p2t::Point* ep : polygon.second) {
+    std::deque<const Coords*> res;
+    for (std::pair<int, std::vector < p2t::Point*>> endpoints : this->targetPoints) {
+        for (p2t::Point* ep : endpoints.second) {
+            if(ep->x == this->startPoint2.x and ep->y == this->startPoint2.y){
+                continue;
+            }
             std::tr1::unordered_set<Coords>::iterator it = this->coordmap.find(Coords(ep->x, ep->y));
             if (it != this->coordmap.end()) {
-                res.push_back(*it);
+                res.push_back(&*it);
             }
         }
-    }
-    const Coords* test = &res[0];
-    while (test->getPred() != 0) {
-        std::cout << "Printing route: " << test->toString() << std::endl;
-        test = test->getPred();
     }
     return res;
 }

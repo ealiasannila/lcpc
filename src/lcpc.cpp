@@ -133,53 +133,73 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
         }
     }
 
-    OGRDataSource::DestroyDataSource(csDS);
+    csDS->Release();
+    targetDS->Release();
+    startDS->Release();
+
 }
 
 int main() {
+
     /*
-     * HOW TO MAKE FAST:
-     * A*
-     * Data structures: Coordsin naapurimappi, Coordmappi arrayksi? Coords luokka kokonaan pois?
-     * Minheap, parempi update operaatio
-     *
-     *TODO Integrate to QGIS plugin
-     *TODO Implement A*
-     *TODO Writing results to shapefile (in QGIS)
-     *TODO Weakly simple polygon splitting
-     *TODO Performance...
-     *
+     FIX MEMORY LEAK
      */
 
     OGRRegisterAll();
     LcpFinder finder{};
     readCostSurface("testpolygon.shp", "targets.shp", "start.shp", &finder);
-    finder.leastCostPath();
+    std::deque<const Coords*> results = finder.leastCostPath();
 
     std::cout << "LCP SEARCH DONE\n";
 
+    const char *pszDriverName = "ESRI Shapefile";
+    OGRSFDriver *poDriver;
 
-    std::map<const Coords*, const Coords*> ancestors;
-    std::map<const Coords*, std::vector<double>> x;
-    std::map<const Coords*, std::vector<double>> y;
+    OGRRegisterAll();
+    poDriver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(
+            pszDriverName);
+    if (poDriver == NULL) {
+        printf("%s driver not available.\n", pszDriverName);
+        exit(1);
+    }
 
 
+    OGRDataSource *poDS;
+
+    poDS = poDriver->CreateDataSource("output.shp", NULL);
+
+    std::cout << "PODS:" << poDS << std::endl;
+    if (poDS == NULL) {
+        printf("Creation of output file failed.\n");
+        exit(1);
+    }
+    OGRSpatialReference sr;
+    sr.importFromEPSG(3047);
     OGRLayer *poLayer;
-    poLayer = poDS->CreateLayer("point_out", NULL, wkbLineString, NULL);
+    poLayer = poDS->CreateLayer("output", &sr, wkbLineString, NULL);
     if (poLayer == NULL) {
         printf("Layer creation failed.\n");
         exit(1);
     }
 
-    SHPHandle hSHP = SHPCreate(outFile.toStdString().c_str(), SHPT_ARC);
-    std::cout << "handle created\n";
+    OGRFieldDefn oField("cost_end", OFTReal);
+    oField.SetPrecision(4);
+
+
+    if (poLayer->CreateField(&oField) != OGRERR_NONE) {
+        printf("Creating Cost field failed.\n");
+        exit(1);
+    }
+
+    std::map<const Coords*, const Coords*> ancestors;
+    std::map<const Coords*, OGRLineString*> geom;
 
 
     std::cout << "Initial insert:\n";
     for (const Coords* point : results) {
         ancestors[point] = point;
-        x[point] = std::vector<double>{point->getX()};
-        y[point] = std::vector<double>{point->getY()};
+        geom[point] = new OGRLineString{};
+        geom[point]->addPoint(point->getX(), point->getY());
         std::cout << point->toString() << std::endl;
     }
 
@@ -202,47 +222,39 @@ int main() {
 
         if (ancestors.find(pred) != ancestors.end()) {
             ancestors[pred] = pred;
-            x[pred] = std::vector<double>{pred->getX()};
-            y[pred] = std::vector<double>{pred->getY()};
+            geom[pred] = new OGRLineString{};
+            geom[pred]->addPoint(pred->getX(), pred->getY());
             std::cout << "Adding point to pred: " << pred->toString() << std::endl;
         } else {
             ancestors[pred] = ancestor;
             results.push_back(pred);
         }
-        x[ancestor].push_back(pred->getX());
-        y[ancestor].push_back(pred->getY());
+        geom[ancestor]->addPoint(pred->getX(), pred->getY());
         std::cout << "Adding point to ancestor: " << ancestor->toString() << std::endl;
 
     }
     std::cout << "Paths mapped\n";
-    for (std::pair<const Coords*, std::vector<double>> xs : x) {
-        std::vector<double> ys = y[xs.first];
 
-        std::cout << "X pointer\n";
-        double *xp = &(xs.second[0]);
-        std::cout << "Y pointer\n";
-        double *yp = &(ys[0]);
 
-        std::cout << "Create SHP\n";
-        SHPObject* psObject = SHPCreateSimpleObject(SHPT_ARC, xs.second.size(), xp, yp, NULL);
-        std::cout << "Write SHP\n";
-        SHPWriteObject(hSHP, -1, psObject);
-        SHPDestroyObject(psObject);
-    }
-    SHPClose(hSHP);
 
-    return 0;
-    /*    std::vector<Coords> targets = finder.leastCostPath();
-        std::cout << "lcp done\n";
-        for (Coords goal : targets) {
-            while (goal.getPred() != 0) {
-                std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << std::endl;
-                goal = *goal.getPred();
-            }
-            std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << std::endl;
+    for (std::pair<const Coords*, OGRLineString*> ls : geom) {
+         OGRFeature *poFeature;
 
+        poFeature = OGRFeature::CreateFeature(poLayer->GetLayerDefn() );
+        poFeature->SetField("cost_end", ls.first->getToStart());
+      
+        poFeature->SetGeometry(ls.second);
+        
+        if (poLayer->CreateFeature(poFeature) != OGRERR_NONE) {
+            printf("Failed to create feature in shapefile.\n");
+            exit(1);
         }
-     */
+
+        OGRFeature::DestroyFeature(poFeature);
+        std::cout<<"deleting";
+        delete ls.second;
+    }
+   
+    OGRDataSource::DestroyDataSource(poDS);
     return 0;
 }
-

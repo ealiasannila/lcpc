@@ -44,7 +44,7 @@ public:
     std::tr1::unordered_set<Coords, CoordsHasher> getCoordmap() {
         return coordmap;
     }
-    std::vector<Coords> leastCostPath();
+    std::deque<const Coords*> leastCostPath();
     void addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction);
     void addStartPoint(p2t::Point* start, int polygon);
     void addSteinerPoint(p2t::Point* steinerpoint, int polygon);
