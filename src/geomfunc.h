@@ -17,6 +17,8 @@ double inline eucDistance(p2t::Point p1, p2t::Point p2) {
 	return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
 }
 
+
+
 int inline addIntermidiatePoints(std::vector<p2t::Point*>* vec, std::vector<p2t::Point*>::iterator pit, std::vector<p2t::Point*>::iterator nextit, double maxDist) {
 	p2t::Point p = **pit;
 	p2t::Point next = **nextit;

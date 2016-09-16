@@ -8,6 +8,7 @@
 #include "lcpfinder.h"
 #include <stdexcept>      // std::out_of_range
 #include "defs.h"
+
 /*
  * Finds opposing by looking up intersection of the immidiate neighbours of either end of the base.
  * This can be either 1 or 2 vertices, of whcih 1 or 0 may be relevant. (irrelevant vertice is already inside funnel)
@@ -15,12 +16,23 @@
  * ?-> have sorted vector of immidiate neighbours available. (increases insertion time to log N, now constant)
  */
 const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polygon) {
-    nContainer ln = l->getLeftNeighbours(polygon);
-    nContainer rn = r->getRightNeighbours(polygon);
 
-    std::sort(ln.begin(), ln.end()); //... could this be avoided? Or is it that bad? they are small vectors...
-    std::sort(rn.begin(), rn.end()); //...
+    nContainer ln = *(l->getLeftNeighbours(polygon));
+    nContainer rn = *(r->getRightNeighbours(polygon));
 
+    std::sort(ln.begin(), ln.end(), std::less<const Coords*>()); //... could this be avoided? Or is it that bad? they are small vectors...
+    std::sort(rn.begin(), rn.end(), std::less<const Coords*>()); //...
+
+    std::cout<<ln.size()<<std::endl;
+    for(const Coords* c : ln){
+        std::cout<<c->toString()<<std::endl;
+    }
+    std::cout<<rn.size()<<std::endl;
+    for(const Coords* c : rn){
+        std::cout<<c->toString()<<std::endl;
+    }
+    
+    exit(1);
     nContainer intersection;
     std::set_intersection(ln.begin(), ln.end(), rn.begin(), rn.end(), std::back_inserter(intersection));
     for (nContainer::iterator it = intersection.begin(); it != intersection.end(); it++) {
@@ -28,16 +40,18 @@ const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polyg
             return *it;
         }
     }
+    
     return 0;
 }
 
+
 std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*neighbours) {
-    nContainer ln = c->getLeftNeighbours(polygon);
+    nContainer ln = *(c->getLeftNeighbours(polygon));
     if (ln.empty()) {
         this->triangulate(polygon);
-        ln = c->getLeftNeighbours(polygon);
+        ln = *(c->getLeftNeighbours(polygon));
     }
-    nContainer rn = c->getRightNeighbours(polygon);
+    nContainer rn = *(c->getRightNeighbours(polygon));
 
     std::deque<Funnel> funnelQue{};
     nContainer::iterator rit = rn.begin();
@@ -66,6 +80,8 @@ void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neig
 
         base = f.getBase();
         std::clock_t bb = std::clock();
+
+
         o = getOpposing(base.first, base.second, polygon);
         this->base_secs += double(std::clock() - bb) / CLOCKS_PER_SEC;
 
@@ -278,9 +294,6 @@ void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
         this->targetPoints[polygon] = std::vector<p2t::Point*>{steinerpoint};
     } else {
         this->targetPoints[polygon].push_back(steinerpoint);
-    }
-    if (polygon == 975) {
-        std::cout << "ADDING HERE\n";
     }
     std::pair < std::tr1::unordered_set<Coords>::iterator, bool> success = this->coordmap.insert(Coords(steinerpoint->x, steinerpoint->y, polygon));
     if (!success.second) {

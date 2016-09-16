@@ -16,6 +16,7 @@
 #include "../lib/poly2tri.h"
 #include <tr1/functional>
 #include <tr1/unordered_set>
+#include <tr1/unordered_map>
 #include <ctime>
 
 struct CoordsHasher {
@@ -31,6 +32,7 @@ struct CoordsHasher {
 class LcpFinder {
 private:
     std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
+
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
     std::map<int, std::vector<p2t::Point*>> targetPoints;
     std::vector<double> frictions;
@@ -52,6 +54,7 @@ public:
     double base_secs = 0;
     double react_secs = 0;
 
+    
     std::tr1::unordered_set<Coords, CoordsHasher> getCoordmap() {
         return coordmap;
     }

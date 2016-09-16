@@ -17,7 +17,6 @@
 class Coords {
 private:
 
-    //change map to two sorted vectors (ints and coords) and binary search. (few insertions many lookups)
     mutable double toStart;
     mutable const Coords* predecessor;
     mutable allNContainer leftNeighbours;
@@ -27,11 +26,11 @@ private:
 
 public:
 
-
+    
     Coords();
     Coords(double x, double y);
     Coords(double x, double y, int polygon);
-
+    void sortNeighbours(unsigned int) const;
     double getX() const {
         return x;
 
@@ -51,8 +50,8 @@ public:
         return y;
     }
     int isRight(const Coords* c1, const Coords* c2) const;
-    nContainer getRightNeighbours(int polygon) const;
-    nContainer getLeftNeighbours(int polygon) const;
+    nContainer* getRightNeighbours(int polygon) const;
+    nContainer* getLeftNeighbours(int polygon) const;
     allNeighIter getAllLeftN() const;
     allNeighIter getAllRightN() const;
     void addToPolygon(int polygon) const;

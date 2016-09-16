@@ -9,6 +9,7 @@
 #include <sstream>
 #include <math.h>
 #include <iostream>
+#include <algorithm>
 
 Coords::Coords(double newx, double newy) {
     x = newx;
@@ -32,9 +33,9 @@ Coords::Coords() {
     this->predecessor = 0;
 }
 
-nContainer Coords::getRightNeighbours(int polygon) const {
+nContainer* Coords::getRightNeighbours(int polygon) const {
     try {
-        return this->rightNeighbours.at(polygon);
+        return &this->rightNeighbours.at(polygon);
     } catch (const std::out_of_range& oor) {
         std::cout << "NoNeighbours: \n";
         std::cout << "polygon: " << polygon;
@@ -42,9 +43,9 @@ nContainer Coords::getRightNeighbours(int polygon) const {
     }
 }
 
-nContainer Coords::getLeftNeighbours(int polygon) const {
+nContainer* Coords::getLeftNeighbours(int polygon) const {
     try {
-        return this->leftNeighbours.at(polygon);
+        return &this->leftNeighbours.at(polygon);
     } catch (const std::out_of_range& oor) {
         std::cout << "NoNeighbours: \n";
         std::cout << "polygon: " << polygon;
@@ -67,14 +68,33 @@ void Coords::addToPolygon(int polygon) const {
 
 void Coords::addNeighbours(const Coords* l, const Coords* r, int polygon) const {
     try {
+
+
+        /*
+        auto ri = std::lower_bound(rightNeighbours.at(polygon).begin(), rightNeighbours.at(polygon).end(), r);
+        rightNeighbours.at(polygon).insert(ri, r);
+        
+         */
         leftNeighbours.at(polygon).push_back(l);
         rightNeighbours.at(polygon).push_back(r);
+
+        std::sort(leftNeighbours.at(polygon).begin(), leftNeighbours.at(polygon).end(), std::less<const Coords*>()); //... could this be avoided? Or is it that bad? they are small vectors...
+//        std::sort(rightNeighbours.at(polygon).begin(), rightNeighbours.at(polygon).end(), std::less<const Coords*>()); //...
+
+
+
     } catch (const std::out_of_range& oor) {
         std::cout << "NoNeighbours: \n";
         std::cout << this->toString();
         std::cout << "polygon: " << polygon;
         exit(1);
     }
+}
+
+void Coords::sortNeighbours(unsigned int polygon) const {
+    std::sort(leftNeighbours.at(polygon).begin(), leftNeighbours.at(polygon).end()); //... could this be avoided? Or is it that bad? they are small vectors...
+    std::sort(rightNeighbours.at(polygon).begin(), rightNeighbours.at(polygon).end()); //...
+
 }
 
 void Coords::setToStart(double cost) const {
