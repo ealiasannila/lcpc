@@ -19,6 +19,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <tr1/functional>
+#include <tr1/unordered_set>
+
 bool inside(OGRPolygon* polygon, OGRPoint* point) {
     if (polygon->getExteriorRing()->isPointInRing(point)) {
         for (unsigned int ri = 0; ri < polygon->getNumInteriorRings(); ri++) {
@@ -338,6 +341,7 @@ int main(int argc, char* argv[]) {
     std::cout << "-funnelqueing: " << finder.fq_secs << " SECONDS\n";
     std::cout << "-getting opposing: " << finder.base_secs << " SECONDS\n";
     std::cout << "-reacting: " << finder.react_secs << " SECONDS\n";
+    std::cout << "-triangulating: " << finder.triangle_secs << " SECONDS\n";
 
     writeShapeFile(results, argv[5]);
     std::cout << "All done!\n";

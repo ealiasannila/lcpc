@@ -31,6 +31,8 @@ struct CoordsHasher {
 
 class LcpFinder {
 private:
+    
+    int id = 0;
     std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
 
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;

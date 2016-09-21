@@ -18,12 +18,13 @@ Coords::Coords(double newx, double newy) {
     this->predecessor = 0;
 }
 
-Coords::Coords(double newx, double newy, int polygon) {
+Coords::Coords(double newx, double newy, int polygon, int id) {
     x = newx;
     y = newy;
     toStart = -1;
     this->addToPolygon(polygon);
     this->predecessor = 0;
+    this->id = id;
 }
 
 Coords::Coords() {
@@ -53,48 +54,54 @@ nContainer* Coords::getLeftNeighbours(int polygon) const {
     }
 }
 
-allNeighIter Coords::getAllLeftN() const {
-    return allNeighIter(this->leftNeighbours.begin(), this->leftNeighbours.end());
+nContainer* Coords::getNeighbours(int polygon) const {
+    try {
+        return &this->neighbours.at(polygon);
+    } catch (const std::out_of_range& oor) {
+        std::cout << "NoNeighbours: \n";
+        std::cout << "polygon: " << polygon;
+        exit(1);
+    }
 }
 
-allNeighIter Coords::getAllRightN() const {
-    return allNeighIter(this->rightNeighbours.begin(), this->rightNeighbours.end());
+std::vector<int> Coords::belongsToPolygons() const {
+    std::vector<int> polygons;
+    for (std::pair<int, nContainer> p : this->leftNeighbours) {
+        polygons.push_back(p.first);
+    }
+    return polygons;
 }
 
 void Coords::addToPolygon(int polygon) const {
     this->leftNeighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
     this->rightNeighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
+    this->neighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
 }
 
 void Coords::addNeighbours(const Coords* l, const Coords* r, int polygon) const {
     try {
 
+        auto li = std::lower_bound(neighbours.at(polygon).begin(), neighbours.at(polygon).end(), l);
 
-        /*
-        auto ri = std::lower_bound(rightNeighbours.at(polygon).begin(), rightNeighbours.at(polygon).end(), r);
-        rightNeighbours.at(polygon).insert(ri, r);
+        if (neighbours.at(polygon).empty() or *(li) != l) {
+            neighbours.at(polygon).insert(li, l);
+        }
         
-         */
+        auto ri = std::lower_bound(neighbours.at(polygon).begin(), neighbours.at(polygon).end(), r);
+
+        if (neighbours.at(polygon).empty() or(*ri) != r) {
+            neighbours.at(polygon).insert(ri, r);
+        }
+
+
         leftNeighbours.at(polygon).push_back(l);
         rightNeighbours.at(polygon).push_back(r);
-
-        std::sort(leftNeighbours.at(polygon).begin(), leftNeighbours.at(polygon).end(), std::less<const Coords*>()); //... could this be avoided? Or is it that bad? they are small vectors...
-//        std::sort(rightNeighbours.at(polygon).begin(), rightNeighbours.at(polygon).end(), std::less<const Coords*>()); //...
-
-
-
     } catch (const std::out_of_range& oor) {
         std::cout << "NoNeighbours: \n";
         std::cout << this->toString();
         std::cout << "polygon: " << polygon;
         exit(1);
     }
-}
-
-void Coords::sortNeighbours(unsigned int polygon) const {
-    std::sort(leftNeighbours.at(polygon).begin(), leftNeighbours.at(polygon).end()); //... could this be avoided? Or is it that bad? they are small vectors...
-    std::sort(rightNeighbours.at(polygon).begin(), rightNeighbours.at(polygon).end()); //...
-
 }
 
 void Coords::setToStart(double cost) const {
@@ -107,11 +114,11 @@ void Coords::setPred(const Coords* pred) const {
 
 std::string Coords::toString() const {
     std::stringstream sstm;
-    sstm << "X: " << x << " Y: " << y << " Polygons: ";
-
+    sstm << "ID: " << id; // << "X: " << x << " Y: " << y << " Polygons: ";
+    /*
     for (std::pair<int, nContainer> p : this->leftNeighbours) {
         sstm << p.first << " ";
-    }
+    }*/
     return sstm.str();
 }
 

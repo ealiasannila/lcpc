@@ -15,7 +15,7 @@ Funnel::Funnel(const Coords* l, const Coords* a, const Coords* r) {
 	rc.push_back(a);
 	rc.push_back(r);
 }
-Funnel::Funnel(std::deque<const Coords*> lc, std::deque<const Coords*> rc) {
+Funnel::Funnel(std::vector<const Coords*> lc, std::vector<const Coords*> rc) {
 	this->lc = lc;
 	this->rc = rc;
 }
@@ -24,10 +24,10 @@ Funnel::Funnel(std::deque<const Coords*> lc, std::deque<const Coords*> rc) {
 std::pair<const Coords*, const Coords*> Funnel::getBase() {
 	return std::pair<const Coords*,const Coords* >(lc.back(), rc.back());
 }
-std::deque<const Coords*> Funnel::getLC() {
+std::vector<const Coords*> Funnel::getLC() {
 	return lc;
 }
-std::deque<const Coords*> Funnel::getRC() {
+std::vector<const Coords*> Funnel::getRC() {
 	return rc;
 }
 
@@ -52,13 +52,12 @@ std::string Funnel::toString() {
  * formed by apex and c.
  */
 Funnel Funnel::split(const Coords* o) {
-	std::deque<const Coords*> newlc = lc;
-	std::deque<const Coords*> newrc;
+	std::vector<const Coords*> newlc = lc;
+	std::vector<const Coords*> newrc;
 
 	lc.clear();
 	lc.push_back(rc.front());
 	lc.push_back(o);
-
 	newrc.push_back(newlc.front());
 	newrc.push_back(o);
 	return Funnel(newlc, newrc);
@@ -67,7 +66,7 @@ Funnel Funnel::split(const Coords* o) {
  * o is not inside the sector formed by fisrt segments of chains, but it is inside the funnel. In this case the funnel is shrunk
  * so that o forms the endpoint of the chain being shrunk.
  */
-void Funnel::shrink(const Coords* o, std::deque<const Coords*>* chain, unsigned lastRemaining) {
+void Funnel::shrink(const Coords* o, std::vector<const Coords*>* chain, unsigned lastRemaining) {
 	while (chain->size() - 1 > lastRemaining) {
 		chain->pop_back();
 	}
@@ -76,7 +75,7 @@ void Funnel::shrink(const Coords* o, std::deque<const Coords*>* chain, unsigned 
 /*
  * locates the last endpoint of an edge in chain, from which's startpoint o can't be seen. (returns index of endpoint of that segment)
  */
-int Funnel::findInChain(const Coords* o, std::deque<const Coords*> chain, int side) {
+int Funnel::findInChain(const Coords* o, std::vector<const Coords*> chain, int side) {
 	for (unsigned i = 1; i < chain.size(); i++) {
 		if (o->isRight(chain.at(i - 1), chain.at(i)) == side) {
 			return i - 1;

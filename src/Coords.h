@@ -19,18 +19,18 @@ private:
 
     mutable double toStart;
     mutable const Coords* predecessor;
+    mutable allNContainer neighbours;
     mutable allNContainer leftNeighbours;
     mutable allNContainer rightNeighbours;
     double x;
     double y;
 
-public:
 
-    
+public:
+    int id;
     Coords();
     Coords(double x, double y);
-    Coords(double x, double y, int polygon);
-    void sortNeighbours(unsigned int) const;
+    Coords(double x, double y, int polygon, int id);
     double getX() const {
         return x;
 
@@ -52,8 +52,8 @@ public:
     int isRight(const Coords* c1, const Coords* c2) const;
     nContainer* getRightNeighbours(int polygon) const;
     nContainer* getLeftNeighbours(int polygon) const;
-    allNeighIter getAllLeftN() const;
-    allNeighIter getAllRightN() const;
+    nContainer* getNeighbours(int polygon) const;
+    std::vector<int> belongsToPolygons() const;
     void addToPolygon(int polygon) const;
     void addNeighbours(const Coords* l, const Coords* r, int polygon) const;
     std::string toString() const;
