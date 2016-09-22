@@ -13,13 +13,15 @@
 #include <cmath>
 #include <limits>
 #include "defs.h"
+#include <tr1/unordered_map>
+#include "sorted_vector.h"
 
 class Coords {
 private:
 
     mutable double toStart;
     mutable const Coords* predecessor;
-    mutable allNContainer neighbours;
+    mutable std::tr1::unordered_map<int,SortedVector<const Coords*>> neighbours;
     mutable allNContainer leftNeighbours;
     mutable allNContainer rightNeighbours;
     double x;
@@ -52,12 +54,15 @@ public:
     int isRight(const Coords* c1, const Coords* c2) const;
     nContainer* getRightNeighbours(int polygon) const;
     nContainer* getLeftNeighbours(int polygon) const;
-    nContainer* getNeighbours(int polygon) const;
+    SortedVector<const Coords*>* getNeighbours(int polygon) const;
     std::vector<int> belongsToPolygons() const;
     void addToPolygon(int polygon) const;
     void addNeighbours(const Coords* l, const Coords* r, int polygon) const;
     std::string toString() const;
     virtual ~Coords();
+    
+
+    bool operator<(const Coords& c) const;
 
     bool operator==(const Coords& c) const;
     bool operator!=(const Coords& c) const;

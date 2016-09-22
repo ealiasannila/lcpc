@@ -6,6 +6,7 @@
  */
 
 #include "Coords.h"
+#include "sorted_vector.h"
 #include <sstream>
 #include <math.h>
 #include <iostream>
@@ -36,7 +37,7 @@ Coords::Coords() {
 
 nContainer* Coords::getRightNeighbours(int polygon) const {
     try {
-        return &this->rightNeighbours.at(polygon);
+        return &this->rightNeighbours[polygon];
     } catch (const std::out_of_range& oor) {
         std::cout << "NoNeighbours: \n";
         std::cout << "polygon: " << polygon;
@@ -46,17 +47,16 @@ nContainer* Coords::getRightNeighbours(int polygon) const {
 
 nContainer* Coords::getLeftNeighbours(int polygon) const {
     try {
-        return &this->leftNeighbours.at(polygon);
+        return &this->leftNeighbours[polygon];
     } catch (const std::out_of_range& oor) {
         std::cout << "NoNeighbours: \n";
         std::cout << "polygon: " << polygon;
         exit(1);
     }
 }
-
-nContainer* Coords::getNeighbours(int polygon) const {
+SortedVector<const Coords*>* Coords::getNeighbours(int polygon) const {
     try {
-        return &this->neighbours.at(polygon);
+        return &this->neighbours[polygon];
     } catch (const std::out_of_range& oor) {
         std::cout << "NoNeighbours: \n";
         std::cout << "polygon: " << polygon;
@@ -73,29 +73,16 @@ std::vector<int> Coords::belongsToPolygons() const {
 }
 
 void Coords::addToPolygon(int polygon) const {
+    this->neighbours.insert(std::pair<int, SortedVector<const Coords*>>(polygon, SortedVector<const Coords*>()));
     this->leftNeighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
     this->rightNeighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
-    this->neighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
 }
 
 void Coords::addNeighbours(const Coords* l, const Coords* r, int polygon) const {
     try {
-
-        auto li = std::lower_bound(neighbours.at(polygon).begin(), neighbours.at(polygon).end(), l);
-
-        if (neighbours.at(polygon).empty() or *(li) != l) {
-            neighbours.at(polygon).insert(li, l);
-        }
-        
-        auto ri = std::lower_bound(neighbours.at(polygon).begin(), neighbours.at(polygon).end(), r);
-
-        if (neighbours.at(polygon).empty() or(*ri) != r) {
-            neighbours.at(polygon).insert(ri, r);
-        }
-
-
-        leftNeighbours.at(polygon).push_back(l);
-        rightNeighbours.at(polygon).push_back(r);
+        neighbours[polygon].insert(r);
+        leftNeighbours[polygon].push_back(l);
+        rightNeighbours[polygon].push_back(r);
     } catch (const std::out_of_range& oor) {
         std::cout << "NoNeighbours: \n";
         std::cout << this->toString();
@@ -131,6 +118,12 @@ int Coords::isRight(const Coords* c1, const Coords* c2) const {
         return 1;
     }
     return 0;
+}
+
+
+
+bool Coords::operator<(const Coords& c) const {
+    return this->getX()< c.getX() or(this->getX()==c.getX() and this->getY()< c.getY());
 }
 
 bool Coords::operator==(const Coords& c) const {

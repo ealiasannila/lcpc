@@ -16,7 +16,6 @@
 #include "../lib/poly2tri.h"
 #include <tr1/functional>
 #include <tr1/unordered_set>
-#include <tr1/unordered_map>
 #include <ctime>
 
 struct CoordsHasher {

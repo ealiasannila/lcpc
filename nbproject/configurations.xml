@@ -67,6 +67,7 @@
         <itemPath>src/lcpfinder.cpp</itemPath>
         <itemPath>src/lcpfinder.h</itemPath>
         <itemPath>src/minHeap.h</itemPath>
+        <itemPath>src/sorted_vector.h</itemPath>
       </logicalFolder>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -200,6 +201,8 @@
       </item>
       <item path="src/minHeap.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="src/sorted_vector.h" ex="false" tool="3" flavor2="0">
+      </item>
     </conf>
     <conf name="Release" type="1">
       <toolsSet>
@@ -312,6 +315,8 @@
       <item path="src/lcpfinder.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/minHeap.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/sorted_vector.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

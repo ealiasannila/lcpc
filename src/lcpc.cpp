@@ -18,6 +18,7 @@
 #include <ctime>
 #include <string.h>
 #include <stdlib.h>
+#include "sorted_vector.h"
 
 #include <tr1/functional>
 #include <tr1/unordered_set>
@@ -265,13 +266,11 @@ void writeShapeFile(std::deque<const Coords*> results, std::string outputfile) {
 
 
 
-    std::cout << "Initial insert:\n";
     for (const Coords* point : results) {
         minheap.push(point);
         ancestors[point] = point;
         geom[point] = new OGRLineString{};
         geom[point]->addPoint(point->getX(), point->getY());
-        std::cout << point->toString() << std::endl;
     }
 
     while (!minheap.empty()) {
@@ -295,9 +294,6 @@ void writeShapeFile(std::deque<const Coords*> results, std::string outputfile) {
         geom[ancestor]->addPoint(pred->getX(), pred->getY());
 
     }
-    std::cout << "Paths mapped\n";
-
-
 
     for (std::pair<const Coords*, OGRLineString*> ls : geom) {
         OGRFeature *poFeature;
@@ -323,6 +319,9 @@ void writeShapeFile(std::deque<const Coords*> results, std::string outputfile) {
 }
 
 int main(int argc, char* argv[]) {
+
+    //"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500
+    //"${OUTPUT_PATH}" testarea.shp targets.shp start.shp friction output 500
     if (argc != 7) {
         std::cout << "Invalid arguments provided\n";
         std::cout << "Correct form is lcpc cost_surface.shp target.shp start.shp name_of_friction_field output_file_name_without_shp_extension max_distance_between_nodes\n";
@@ -331,17 +330,14 @@ int main(int argc, char* argv[]) {
 
     OGRRegisterAll();
     LcpFinder finder{};
+    std::cout<<"Reading cost surface...\n";
     readCostSurface(argv[1], argv[2], argv[3], &finder, argv[4], argv[6]);
     //readCostSurfaceDummy("testpolygon.shp", "targets.shp", "start.shp", &finder);
-    std::cout << "READ SURFACE DONE\n";
+    std::cout << "Finished reading cost surface. Starting LCP search...\n";
 
     std::deque<const Coords*> results = finder.leastCostPath();
+    std::cout << "Search finished. Writing results...\n";
 
-    std::cout << "TIME SPENT IN FUNNELALGORITHM: " << finder.funnel_secs << " SECONDS\n";
-    std::cout << "-funnelqueing: " << finder.fq_secs << " SECONDS\n";
-    std::cout << "-getting opposing: " << finder.base_secs << " SECONDS\n";
-    std::cout << "-reacting: " << finder.react_secs << " SECONDS\n";
-    std::cout << "-triangulating: " << finder.triangle_secs << " SECONDS\n";
 
     writeShapeFile(results, argv[5]);
     std::cout << "All done!\n";

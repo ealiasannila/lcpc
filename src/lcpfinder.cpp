@@ -15,19 +15,19 @@
  * LOOKING UP INTERSECTION REQUIRES SORTING IMMIDIATE NEIGHBOURS. HOW TO MAKE FASTER:
  * ?-> have sorted vector of immidiate neighbours available. (increases insertion time to log N, now constant)
  */
-const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polygon) {
 
-    nContainer* ln = l->getNeighbours(polygon);
-    nContainer* rn = r->getNeighbours(polygon);
-    
-    nContainer intersection;
-    std::set_intersection(ln->begin(), ln->end(), rn->begin(), rn->end(), std::back_inserter(intersection));
-    for (nContainer::iterator it = intersection.begin(); it != intersection.end(); it++) {
+
+const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polygon) {
+    nContainer intrsct;
+
+
+    intrsct = intersection(l->getLeftNeighbours(polygon), r->getNeighbours(polygon));
+    for (nContainer::iterator it = intrsct.begin(); it != intrsct.end(); it++) {
         if (*it != 0 and (*it)->isRight(l, r) == -1) {
             return *it;
         }
     }
-    
+
     return 0;
 }
 
@@ -56,42 +56,28 @@ std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*neighb
 
 void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours) {
     std::deque<Funnel> funnelQue = initFQue(c, polygon, neighbours);
-    std::clock_t begin = std::clock();
-
     std::pair<const Coords*, const Coords*> base;
     const Coords* o;
     while (!funnelQue.empty()) {
-        std::clock_t queb = std::clock();
         Funnel f = funnelQue.front();
         funnelQue.pop_front();
-        this->fq_secs += double(std::clock() - queb) / CLOCKS_PER_SEC;
-
         base = f.getBase();
-        std::clock_t bb = std::clock();
-
         o = getOpposing(base.first, base.second, polygon);
-        this->base_secs += double(std::clock() - bb) / CLOCKS_PER_SEC;
-
         if (o != 0) {
             std::clock_t rb = std::clock();
             f.reactToOpposite(o, &funnelQue, neighbours, polygon);
-            this->react_secs += double(std::clock() - rb) / CLOCKS_PER_SEC;
-
             funnelQue.push_back(f);
         }
 
     }
-    this->funnel_secs += double(std::clock() - begin) / CLOCKS_PER_SEC;
 }
 
 nSet LcpFinder::findNeighbours(const Coords* c) {
-    std::clock_t begin = std::clock();
     nSet neighbours{};
     std::vector<int> polygons = c->belongsToPolygons();
     for (int p : polygons) {
         findNeighboursInPolygon(c, p, &neighbours);
     }
-    this->nfinding_secs += double(std::clock() - begin) / CLOCKS_PER_SEC;
     return neighbours;
 }
 
@@ -101,7 +87,6 @@ std::deque<const Coords*> LcpFinder::leastCostPath() {
     const Coords* start;
     if (startIt != coordmap.end()) {
         start = &*startIt;
-        std::cout << "starting search\n";
     } else {
         std::cout << "Start not found in coordset!\n";
         exit(1);
@@ -123,19 +108,16 @@ std::deque<const Coords*> LcpFinder::leastCostPath() {
     int old = 0;
     int total = this->coordmap.size();
 
-
-
-    std::clock_t begin = std::clock();
-
     while (!minheap.empty()) {
-        std::clock_t pstart = std::clock();
         int percentage = handled * 100 / total;
         if (percentage != old) {
             old = percentage;
-            std::cout << "Searching..." << percentage << "% done\n";
+            std::cout << "Searching..." << percentage << "% done\r";
+            fflush ( stdout );
+
+            
         }
         handled++;
-        this->printing_secs += double(std::clock() - pstart) / CLOCKS_PER_SEC;
         const Coords* node = minheap.top();
         minheap.pop();
         nSet neighbours = findNeighbours(node);
@@ -154,7 +136,6 @@ std::deque<const Coords*> LcpFinder::leastCostPath() {
         }
     }
 
-    std::cout << "search done!\n";
     //update to many endpoints
     std::deque<const Coords*> res;
     for (std::pair<int, std::vector < p2t::Point*>> endpoints : this->targetPoints) {
@@ -168,20 +149,10 @@ std::deque<const Coords*> LcpFinder::leastCostPath() {
             }
         }
     }
-    std::clock_t end = std::clock();
-    this->finder_secs = double(end - begin) / CLOCKS_PER_SEC;
-    this->finder_secs -= this->triangle_secs;
-    this->finder_secs -= minheap.heaptime;
-    this->finder_secs -= this->printing_secs;
-    this->finder_secs -= this->nfinding_secs;
-    this->heap_secs = minheap.heaptime;
-
     return res;
 }
 
 void LcpFinder::triangulate(int polygon) {
-    
-    std::clock_t begin = std::clock();
 
     std::vector<std::vector < p2t::Point*>> points;
     try {
@@ -241,12 +212,9 @@ void LcpFinder::triangulate(int polygon) {
             }
 
             cp[i]->addNeighbours(cp[l], cp[r], polygon);
-            
+
         }
     }
-    std::clock_t end = std::clock();
-    this->triangle_secs += double(end - begin) / CLOCKS_PER_SEC;
-
 }
 
 LcpFinder::~LcpFinder() {

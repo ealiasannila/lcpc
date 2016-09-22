@@ -18,6 +18,20 @@ double inline eucDistance(p2t::Point p1, p2t::Point p2) {
 }
 
 
+nContainer inline intersection(nContainer* ln, SortedVector<const Coords*>* rn){
+    nContainer res;
+    for(auto li = ln->begin(); li != ln->end(); li++){
+        for (auto ri = rn->begin(); ri != rn->end(); ri++){
+            if(*ri>*li){
+                break;
+            }
+            if(*ri==*li){
+                res.push_back(*ri);
+            }
+        }
+    }
+    return res;
+}
 
 int inline addIntermidiatePoints(std::vector<p2t::Point*>* vec, std::vector<p2t::Point*>::iterator pit, std::vector<p2t::Point*>::iterator nextit, double maxDist) {
 	p2t::Point p = **pit;

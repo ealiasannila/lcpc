@@ -8,6 +8,7 @@
 #ifndef SRC_DEFS_H_
 #define SRC_DEFS_H_
 
+#include <tr1/unordered_map>
 #include <map>
 #include <list>
 #include <queue>
@@ -17,7 +18,7 @@
 
 class Coords;
 typedef std::vector<const Coords*> nContainer;
-typedef std::map<int, nContainer> allNContainer;
+typedef std::tr1::unordered_map<int, nContainer> allNContainer;
 typedef std::pair<nContainer::iterator, nContainer::iterator>	neighIter;
 typedef std::pair<std::map<int, nContainer>::iterator, std::map<int, nContainer>::iterator> allNeighIter;
 typedef std::map<const Coords*, int> nSet; //used in dijsktra/A* must not allow duplicates.
