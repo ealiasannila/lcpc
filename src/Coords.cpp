@@ -19,13 +19,13 @@ Coords::Coords(double newx, double newy) {
     this->predecessor = 0;
 }
 
-Coords::Coords(double newx, double newy, int polygon, int id) {
+Coords::Coords(double newx, double newy, int polygon, bool target) {
     x = newx;
     y = newy;
     toStart = -1;
     this->addToPolygon(polygon);
     this->predecessor = 0;
-    this->id = id;
+    this->target = target;
 }
 
 Coords::Coords() {
@@ -94,6 +94,9 @@ void Coords::addNeighbours(const Coords* l, const Coords* r, int polygon) const 
 void Coords::setToStart(double cost) const {
     toStart = cost;
 }
+void Coords::setToEnd(double cost) const {
+    toEnd = cost;
+}
 
 void Coords::setPred(const Coords* pred) const {
     predecessor = pred;
@@ -101,11 +104,10 @@ void Coords::setPred(const Coords* pred) const {
 
 std::string Coords::toString() const {
     std::stringstream sstm;
-    sstm << "ID: " << id; // << "X: " << x << " Y: " << y << " Polygons: ";
-    /*
+    
     for (std::pair<int, nContainer> p : this->leftNeighbours) {
         sstm << p.first << " ";
-    }*/
+    }
     return sstm.str();
 }
 

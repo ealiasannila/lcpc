@@ -30,8 +30,8 @@ struct CoordsHasher {
 
 class LcpFinder {
 private:
-    
-    int id = 0;
+    int numOfTargets = 0;
+    double minFriction = std::numeric_limits<double>::infinity();
     std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
 
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
@@ -42,7 +42,8 @@ private:
     std::deque<Funnel> initFQue(const Coords* c, int polygon, nSet*neighbours);
     void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours);
     nSet findNeighbours(const Coords* c);
-    std::vector<p2t::Point*> intermidiatePoints(p2t::Point p, p2t::Point next, double maxDist);
+    double toClosestEnd(const Coords* c);
+    
 public:
     double finder_secs = 0;
     double triangle_secs = 0;
@@ -59,12 +60,12 @@ public:
     std::tr1::unordered_set<Coords, CoordsHasher> getCoordmap() {
         return coordmap;
     }
-    std::deque<const Coords*> leastCostPath();
+    std::deque<const Coords*> leastCostPath(int algorithm);
     void addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction);
     void addStartPoint(p2t::Point* start, int polygon);
     void addSteinerPoint(p2t::Point* steinerpoint, int polygon);
     void triangulate(int polygon);
-    p2t::Point startPoint2;
+    const Coords* startPoint2;
 
     ~LcpFinder();
 };

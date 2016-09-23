@@ -81,44 +81,75 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
     return neighbours;
 }
 
-std::deque<const Coords*> LcpFinder::leastCostPath() {
-
-    std::tr1::unordered_set<Coords>::iterator startIt = this->coordmap.find(Coords(this->startPoint2.x, this->startPoint2.y));
-    const Coords* start;
-    if (startIt != coordmap.end()) {
-        start = &*startIt;
-    } else {
-        std::cout << "Start not found in coordset!\n";
-        exit(1);
+double LcpFinder::toClosestEnd(const Coords* c) {
+    double min = std::numeric_limits<double>::max();
+    for (std::pair<int, std::vector < p2t::Point*>> polygon : targetPoints) {
+        for (p2t::Point* target : polygon.second) {
+            double d = eucDistance(target, c);
+            if (d < min) {
+                min = d;
+            }
+        }
     }
+    return min * this->minFriction;
+}
 
-    start->setToStart(0);
+ struct cmpr {
+        bool (*f)(const Coords* , const Coords* );
 
-    struct compToStart {
+        cmpr(){
+            f = &compAstar;
+        }
+        
+        cmpr(bool (*comparefunction)(const Coords* , const Coords* )) {
+            f = comparefunction;
+        }
 
         bool operator()(const Coords* x, const Coords* y) const {
-            return ((x->getToStart()) > (y->getToStart()));
+            return f(x, y);
         }
-    } compare{};
-    MinHeap<const Coords*, compToStart> minheap(compare);
+    };
 
-    minheap.push(start);
+std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
+    int targetsFound = 0;
+    this->startPoint2->setToStart(0);
+
+    bool (*compareFunction)(const Coords* , const Coords* );
+    
+
+    if (algorithm == 0) {
+        compareFunction = &compDijkstra;
+    } else if (algorithm == 1) {
+        compareFunction = &compAstar;
+    }
+    cmpr comparator{compareFunction};
+
+    MinHeap<const Coords*, cmpr> minheap(comparator);
+
+
+
+    minheap.push(this->startPoint2);
 
     int handled = 0;
     int old = 0;
     int total = this->coordmap.size();
 
     while (!minheap.empty()) {
+
         int percentage = handled * 100 / total;
         if (percentage != old) {
             old = percentage;
-            std::cout << "Searching..." << percentage << "% done\r";
-            fflush ( stdout );
-
-            
+            std::cout << "\rSearching..." << percentage << "% done";
+            fflush(stdout);
         }
         handled++;
         const Coords* node = minheap.top();
+        if (node->target) {
+            targetsFound++;
+            if (targetsFound == this->numOfTargets) {
+                break;
+            }
+        }
         minheap.pop();
         nSet neighbours = findNeighbours(node);
         for (std::pair<const Coords*, int> p : neighbours) {
@@ -126,6 +157,7 @@ std::deque<const Coords*> LcpFinder::leastCostPath() {
             double d{node->getToStart() + eucDistance(node, n) * this->frictions[p.second]};
             if (n->getToStart() < 0) { // node has not yet been inserted into minheap
                 n->setToStart(d);
+                n->setToEnd(this->toClosestEnd(n));
                 n->setPred(node);
                 minheap.push(n);
             } else if (n->getToStart() > d) {
@@ -136,11 +168,10 @@ std::deque<const Coords*> LcpFinder::leastCostPath() {
         }
     }
 
-    //update to many endpoints
     std::deque<const Coords*> res;
     for (std::pair<int, std::vector < p2t::Point*>> endpoints : this->targetPoints) {
         for (p2t::Point* ep : endpoints.second) {
-            if (ep->x == this->startPoint2.x and ep->y == this->startPoint2.y) {
+            if (ep->x == this->startPoint2->getX() and ep->y == this->startPoint2->getY()) {
                 continue;
             }
             std::tr1::unordered_set<Coords>::iterator it = this->coordmap.find(Coords(ep->x, ep->y));
@@ -186,7 +217,7 @@ void LcpFinder::triangulate(int polygon) {
         Coords c[3];
         for (unsigned i = 0; i < 3; i++) {
             p2t::Point* point = triangle->GetPoint(i);
-            c[i] = Coords(point->x, point->y, polygon, 0);
+            c[i] = Coords(point->x, point->y);
         }
         // if triangle orientation is clockwise turn it to CCW
         if (c[0].isRight(&c[1], &c[2]) == 1) {
@@ -234,12 +265,14 @@ LcpFinder::~LcpFinder() {
 }
 
 void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction) {
+    if (friction < this->minFriction) {
+        minFriction = friction;
+    }
     this->frictions.push_back(friction);
     this->polygons.push_back(points);
     for (std::vector<p2t::Point*> ring : points) {
         for (p2t::Point* point : ring) {
-            std::pair < std::tr1::unordered_set<Coords>::iterator, bool> p = coordmap.insert(Coords(point->x, point->y, polygons.size() - 1, this->id));
-            this->id++;
+            std::pair < std::tr1::unordered_set<Coords>::iterator, bool> p = coordmap.insert(Coords(point->x, point->y, polygons.size() - 1, false));
             if (!p.second) {
                 p.first->addToPolygon(polygons.size() - 1);
             }
@@ -254,17 +287,18 @@ void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
     } else {
         this->targetPoints[polygon].push_back(steinerpoint);
     }
-    std::pair < std::tr1::unordered_set<Coords>::iterator, bool> success = this->coordmap.insert(Coords(steinerpoint->x, steinerpoint->y, polygon, this->id));
-    id++;
+    std::pair < std::tr1::unordered_set<Coords>::iterator, bool> success = this->coordmap.insert(Coords(steinerpoint->x, steinerpoint->y, polygon, true));
     if (!success.second) {
         std::cout << "DID NOT INSERT\n";
         std::cout << success.first->toString() << std::endl;
-        std::cout << Coords(steinerpoint->x, steinerpoint->y, polygon, id).toString() << std::endl;
+        std::cout << Coords(steinerpoint->x, steinerpoint->y, polygon, true).toString() << std::endl;
+    } else {
+        this->numOfTargets++;
     }
 }
 
 void LcpFinder::addStartPoint(p2t::Point* startPoint, int polygon) {
     this->addSteinerPoint(startPoint, polygon);
-    this->startPoint2 = *startPoint;
+    this->startPoint2 = & * this->coordmap.find(Coords(startPoint->x, startPoint->y));
 
 }
