@@ -45,16 +45,7 @@ private:
     double toClosestEnd(const Coords* c);
     
 public:
-    double finder_secs = 0;
-    double triangle_secs = 0;
-    double heap_secs = 0;
-    double preliminaries = 0;
-    double printing_secs = 0;
-    double nfinding_secs = 0;
-    double funnel_secs = 0;
-    double fq_secs = 0;
-    double base_secs = 0;
-    double react_secs = 0;
+
 
     
     std::tr1::unordered_set<Coords, CoordsHasher> getCoordmap() {
