@@ -31,8 +31,9 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500 "ESRI Shapefile"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500 "ESRI Shapefile" astar</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500 "ESRI Shapefile" astar</runcommand>
+        <runcommand>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

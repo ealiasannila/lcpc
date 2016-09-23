@@ -275,6 +275,62 @@ std::string validateOutfile(OGRSFDriver* driver, std::string outputfile) {
     return outputfile;
 }
 
+void writePoints(std::deque<const Coords*> results, std::string outputfile, const char *pszDriverName, OGRSpatialReference sr) {
+    OGRSFDriver *driver;
+    OGRRegisterAll();
+    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName);
+
+    if (!testDriver(driver)) {
+        driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+    }
+
+    OGRDataSource *pointDS;
+
+    outputfile = validateOutfile(driver, outputfile);
+    pointDS = driver->CreateDataSource((outputfile).c_str(), NULL);
+    if (pointDS == NULL) {
+        printf("Creation of output file failed.\n");
+        exit(1);
+    }
+
+
+    OGRLayer *pointLayer;
+    pointLayer = pointDS->CreateLayer("point_results", &sr, wkbPoint, NULL);
+    if (pointLayer == NULL) {
+        printf("Point layer creation failed.\n");
+        exit(1);
+    }
+
+    OGRFieldDefn cField("cost", OFTReal);
+    cField.SetPrecision(2);
+
+
+    if (pointLayer->CreateField(&cField) != OGRERR_NONE) {
+        printf("Creating Cost field failed.\n");
+        exit(1);
+    }
+
+    for (const Coords* point: results) {
+        OGRFeature *poFeature;
+       
+        poFeature = OGRFeature::CreateFeature(pointLayer->GetLayerDefn());
+        poFeature->SetField("cost", point->getToStart());
+        OGRPoint ogrpt(point->getX(), point->getY());
+        poFeature->SetGeometry(&ogrpt);
+
+        if (pointLayer->CreateFeature(poFeature) != OGRERR_NONE) {
+            printf("Failed to create feature in shapefile.\n");
+            exit(1);
+        }
+
+        OGRFeature::DestroyFeature(poFeature);
+    }
+
+    OGRDataSource::DestroyDataSource(pointDS);
+
+
+}
+
 void writeOutput(std::deque<const Coords*> results, std::string outputfile, const char *pszDriverName, OGRSpatialReference sr) {
 
     OGRSFDriver *driver;
@@ -400,7 +456,9 @@ int main(int argc, char* argv[]) {
 
     //"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500
     //"${OUTPUT_PATH}" testarea.shp targets.shp start.shp friction output 500
-    if (strcmp(argv[1], "-h") == 0) {
+   
+    
+    if (argc < 2 or strcmp(argv[1], "-h") == 0) {
         std::cout << "This program is used to search for least cost paths in polygonal costsurface.\n";
 
         std::cout << "USAGE:\n"
@@ -417,16 +475,16 @@ int main(int argc, char* argv[]) {
         exit(0);
     }
 
-    if (argc != 9) {
+    if (argc != 10) {
         std::cout << "Invalid arguments provided see \"lcp -h\" for details\n";
         std::cout << "Correct form is\n"
                 "lcpc cost_surface_file target_file start_file name_of_friction_field output_file_name max_distance_between_nodes output_drivername search_algorithm\n";
         return 0;
     }
     int alg = 1;
-    if (strcmp(argv[8], "astar") == 0) {
+    if (strcmp(argv[9], "astar") == 0) {
         alg = 1;
-    } else if (strcmp(argv[8], "dijkstra") == 0) {
+    } else if (strcmp(argv[9], "dijkstra") == 0) {
         alg = 0;
     } else {
         std::cout << "unknown search algorithm. using A* (possible choises are \"astar\" or \"dijkstra\"\n";
@@ -436,7 +494,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Reading cost surface...\n";
     OGRSpatialReference sr;
     std::clock_t begin = std::clock();
-    readCostSurface(argv[1], argv[2], argv[3], &finder, argv[4], argv[6], &sr);
+    readCostSurface(argv[1], argv[2], argv[3], &finder, argv[4], argv[7], &sr);
     //readCostSurfaceDummy("testpolygon.shp", "targets.shp", "start.shp", &finder);
     double secs = double(std::clock() - begin) / CLOCKS_PER_SEC;
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
@@ -446,7 +504,8 @@ int main(int argc, char* argv[]) {
     std::cout << "\nSearch finished (took " << secs << "s). Writing results...\n";
 
 
-    writeOutput(results, argv[5], argv[7], sr);
+    writeOutput(results, argv[5], argv[8], sr);
+    writePoints(results, argv[6], argv[8], sr);
     std::cout << "All done!\n";
     return 0;
 }
