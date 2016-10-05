@@ -174,8 +174,9 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
                 polygon[ri + 1].pop_back();
             }
 
-            intermidiatePoints(&polygon, maxd);
-
+            if (maxd > 0) {
+                intermidiatePoints(&polygon, maxd);
+            }
             finder->addPolygon(polygon, csFtre->GetFieldAsDouble(frictionField));
 
             if (inside(csPolygon, startPoint)) {
@@ -275,18 +276,25 @@ std::string validateOutfile(OGRSFDriver* driver, std::string outputfile) {
     return outputfile;
 }
 
-void writePoints(std::deque<const Coords*> results, std::string outputfile, const char *pszDriverName, OGRSpatialReference sr) {
+void writePoints(std::deque<const Coords*> results, std::string outputfile, const char *pszDriverName, OGRSpatialReference sr, bool overwrite) {
     OGRSFDriver *driver;
     OGRRegisterAll();
     driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName);
 
-    if (!testDriver(driver)) {
-        driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+    if (!overwrite) {
+        if (!testDriver(driver)) {
+            driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+        }
     }
+
 
     OGRDataSource *pointDS;
 
-    outputfile = validateOutfile(driver, outputfile);
+    if (!overwrite) {
+        outputfile = validateOutfile(driver, outputfile);
+    }else if (fileExists(outputfile)){
+        driver->DeleteDataSource((outputfile).c_str());
+    }
     pointDS = driver->CreateDataSource((outputfile).c_str(), NULL);
     if (pointDS == NULL) {
         printf("Creation of output file failed.\n");
@@ -310,9 +318,9 @@ void writePoints(std::deque<const Coords*> results, std::string outputfile, cons
         exit(1);
     }
 
-    for (const Coords* point: results) {
+    for (const Coords* point : results) {
         OGRFeature *poFeature;
-       
+
         poFeature = OGRFeature::CreateFeature(pointLayer->GetLayerDefn());
         poFeature->SetField("cost", point->getToStart());
         OGRPoint ogrpt(point->getX(), point->getY());
@@ -331,19 +339,23 @@ void writePoints(std::deque<const Coords*> results, std::string outputfile, cons
 
 }
 
-void writeOutput(std::deque<const Coords*> results, std::string outputfile, const char *pszDriverName, OGRSpatialReference sr) {
+void writeOutput(std::deque<const Coords*> results, std::string outputfile, const char *pszDriverName, OGRSpatialReference sr, bool overwrite) {
 
     OGRSFDriver *driver;
     OGRRegisterAll();
     driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName);
-
-    if (!testDriver(driver)) {
-        driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+    if (!overwrite) {
+        if (!testDriver(driver)) {
+            driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+        }
     }
-
     OGRDataSource *pathDS;
+    if (!overwrite) {
+        outputfile = validateOutfile(driver, outputfile);
 
-    outputfile = validateOutfile(driver, outputfile);
+    } else if ( fileExists(outputfile)) {
+        driver->DeleteDataSource((outputfile).c_str());
+    }
     pathDS = driver->CreateDataSource((outputfile).c_str(), NULL);
     if (pathDS == NULL) {
         printf("Creation of output file failed.\n");
@@ -456,29 +468,33 @@ int main(int argc, char* argv[]) {
 
     //"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500
     //"${OUTPUT_PATH}" testarea.shp targets.shp start.shp friction output 500
-   
-    
+
+
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
         std::cout << "This program is used to search for least cost paths in polygonal costsurface.\n";
 
         std::cout << "USAGE:\n"
-                "The program requires 8 parameters to run correctly. Parameters should be in following order:\n"
+                "The program requires 9 parameters to run correctly. Parameters should be in following order:\n"
                 "\tname of cost surface file. (Supports formats supported by OGR)\n"
                 "\tname of target points file can be any number of points. All points must be inside cost surface polygons. (Supports formats supported by OGR)\n"
                 "\tname of start point file, must be single point inside one of the cost surface polygons. (Supports formats supported by OGR)\n"
                 "\tname of the friction field in cost surface\n"
-                "\toutput file name, if no extension is given a folder will be assumed (at least with shapefile driver)\n"
+                "\toutput path file name, if no extension is given a folder will be assumed (at least with shapefile driver)\n"
+                "\toutput points file name, if no extension is given a folder will be assumed (at least with shapefile driver)\n"
                 "\tmaximum distance between nodes in cost surface. This is used to add temporary additional nodes during LCP calculation if nodes are too far apart.\n"
                 "\toutput driver name (Supports drivers supported by OGR)\n"
-                "\talgorithm to use in lcp search. Options are dijksra/astar. Using astar is recommended unless number of targetpoints is high compared to number of nodes.";
-
+                "\talgorithm to use in lcp search. Options are dijksra/astar. Using astar is recommended unless number of targetpoints is high compared to number of nodes."
+                "\toverwrite switch -o (if used will not prompt on anything and just overwrite all files)";
         exit(0);
     }
 
-    if (argc != 10) {
+    std::cout << argc << " provided:";
+    for (int i = 1; i < argc; i++) {
+        std::cout << (i) << ": " << argv[i] << std::endl;
+    }
+
+    if (argc != 10 and argc != 11) {
         std::cout << "Invalid arguments provided see \"lcp -h\" for details\n";
-        std::cout << "Correct form is\n"
-                "lcpc cost_surface_file target_file start_file name_of_friction_field output_file_name max_distance_between_nodes output_drivername search_algorithm\n";
         return 0;
     }
     int alg = 1;
@@ -488,6 +504,10 @@ int main(int argc, char* argv[]) {
         alg = 0;
     } else {
         std::cout << "unknown search algorithm. using A* (possible choises are \"astar\" or \"dijkstra\"\n";
+    }
+    bool overwrite = false;
+    if (argc == 11 and strcmp(argv[10], "-o") == 0) {
+        overwrite = true;
     }
     OGRRegisterAll();
     LcpFinder finder{};
@@ -504,8 +524,8 @@ int main(int argc, char* argv[]) {
     std::cout << "\nSearch finished (took " << secs << "s). Writing results...\n";
 
 
-    writeOutput(results, argv[5], argv[8], sr);
-    writePoints(results, argv[6], argv[8], sr);
+    writeOutput(results, argv[5], argv[8], sr, overwrite);
+    writePoints(results, argv[6], argv[8], sr, overwrite);
     std::cout << "All done!\n";
     return 0;
 }

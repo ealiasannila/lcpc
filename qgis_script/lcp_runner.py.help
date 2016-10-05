@@ -1,0 +1,54 @@
+(dp0
+S'target_point'
+p1
+VPoint layer containing n target points. 
+p2
+sS'ALG_DESC'
+p3
+VRuns least cost path searching tool. The lcp executable must be located in the same directory as this script. See ./lcp -h or (URL) for more info about the tool.
+p4
+sS'cost_surface'
+p5
+VPolygonal cost surface. Should have friction field. Gaps between polygons are considered as no go zones.
+p6
+sS'output_driver'
+p7
+VOGR driver to be used in output file creation. Default value is ESRI Shapefile.
+p8
+sS'algorithm'
+p9
+VAlgorithm to use in least cost path search. Accepted values are "astar" or "dijkstra"
+p10
+sS'ALG_CREATOR'
+p11
+VElias Annila\u000aelias.annila@helsinki.fi
+p12
+sS'output_path'
+p13
+VFilename for polyline least cost path tree
+p14
+sS'ALG_HELP_CREATOR'
+p15
+VElias Annila\u000aelias.annila@helsinki.fi
+p16
+sS'output_points'
+p17
+Voutput filename for target points with cost as attribute
+p18
+sS'output'
+p19
+VOutputfilename. When using ESRI Shapefile driver if no .shp extension is given a directory containing outputfiles will be created.
+p20
+sS'start_point'
+p21
+VPoint layer that represents exactly one startpoint. Startpoint must be within one of the cost surface polygons.
+p22
+sS'friction_field'
+p23
+VFriction field to be used in calculating the cost of the path (cost = friction*distance)
+p24
+sS'min_distance'
+p25
+VMinimum distance between nodes on cost surface. If distance between nodes is less than this distance required number of temporary nodes is calculated between existing nodes. Value <= 0 means that no nodes will be added.
+p26
+s.
