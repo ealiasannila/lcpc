@@ -9,34 +9,29 @@
                    displayName="Resource Files"
                    projectFiles="true">
       <logicalFolder name="lib" displayName="lib" projectFiles="true">
+        <logicalFolder name="clipper" displayName="clipper" projectFiles="true">
+          <logicalFolder name="cpp" displayName="cpp" projectFiles="true">
+            <itemPath>lib/clipper/cpp/CMakeLists.txt</itemPath>
+            <itemPath>lib/clipper/cpp/clipper.cpp</itemPath>
+            <itemPath>lib/clipper/cpp/clipper.hpp</itemPath>
+            <itemPath>lib/clipper/cpp/polyclipping.pc.cmakein</itemPath>
+          </logicalFolder>
+          <logicalFolder name="Documentation"
+                         displayName="Documentation"
+                         projectFiles="true">
+            <itemPath>lib/clipper/Documentation/clipper.chm</itemPath>
+            <itemPath>lib/clipper/Documentation/default.css</itemPath>
+            <itemPath>lib/clipper/Documentation/offset_triginometry.svg</itemPath>
+            <itemPath>lib/clipper/Documentation/offset_triginometry2.svg</itemPath>
+            <itemPath>lib/clipper/Documentation/offset_triginometry3.svg</itemPath>
+          </logicalFolder>
+          <itemPath>lib/clipper/License.txt</itemPath>
+          <itemPath>lib/clipper/README</itemPath>
+        </logicalFolder>
         <logicalFolder name="common" displayName="common" projectFiles="true">
           <itemPath>lib/common/shapes.cc</itemPath>
           <itemPath>lib/common/shapes.h</itemPath>
           <itemPath>lib/common/utils.h</itemPath>
-        </logicalFolder>
-        <logicalFolder name="old" displayName="old" projectFiles="true">
-          <itemPath>lib/old/COPYRIGHTS</itemPath>
-          <itemPath>lib/old/Makefile</itemPath>
-          <itemPath>lib/old/README</itemPath>
-          <itemPath>lib/old/boxc100.bdm</itemPath>
-          <itemPath>lib/old/circle1.bdm</itemPath>
-          <itemPath>lib/old/circle2.bdm</itemPath>
-          <itemPath>lib/old/circle3.bdm</itemPath>
-          <itemPath>lib/old/crazybox1.bdm</itemPath>
-          <itemPath>lib/old/crazybox2.bdm</itemPath>
-          <itemPath>lib/old/defs.h</itemPath>
-          <itemPath>lib/old/geometry.cc</itemPath>
-          <itemPath>lib/old/geometry.h</itemPath>
-          <itemPath>lib/old/guitar.bdm</itemPath>
-          <itemPath>lib/old/mps2eps</itemPath>
-          <itemPath>lib/old/parse.h</itemPath>
-          <itemPath>lib/old/poly2tri</itemPath>
-          <itemPath>lib/old/predicates.cc</itemPath>
-          <itemPath>lib/old/sample1.bdm</itemPath>
-          <itemPath>lib/old/sample2.bdm</itemPath>
-          <itemPath>lib/old/sample3.bdm</itemPath>
-          <itemPath>lib/old/splay.h</itemPath>
-          <itemPath>lib/old/superior.bdm</itemPath>
         </logicalFolder>
         <logicalFolder name="sweep" displayName="sweep" projectFiles="true">
           <itemPath>lib/sweep/advancing_front.cc</itemPath>
@@ -109,55 +104,51 @@
           <commandLine>-lgdal</commandLine>
         </linkerTool>
       </compileType>
+      <item path="lib/clipper/Documentation/clipper.chm"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/default.css"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/offset_triginometry.svg"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/offset_triginometry2.svg"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/offset_triginometry3.svg"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/License.txt" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/CMakeLists.txt" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/clipper.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/clipper.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/polyclipping.pc.cmakein"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="lib/common/shapes.cc" ex="false" tool="1" flavor2="0">
       </item>
       <item path="lib/common/shapes.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/common/utils.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/COPYRIGHTS" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/Makefile" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/README" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/boxc100.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/circle1.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/circle2.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/circle3.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/crazybox1.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/crazybox2.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/defs.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/geometry.cc" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="lib/old/geometry.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/guitar.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/mps2eps" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/parse.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/poly2tri" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/predicates.cc" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="lib/old/sample1.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/sample2.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/sample3.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/splay.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/superior.bdm" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/poly2tri.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -224,55 +215,51 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="lib/clipper/Documentation/clipper.chm"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/default.css"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/offset_triginometry.svg"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/offset_triginometry2.svg"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/offset_triginometry3.svg"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/License.txt" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/CMakeLists.txt" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/clipper.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/clipper.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/polyclipping.pc.cmakein"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="lib/common/shapes.cc" ex="false" tool="1" flavor2="0">
       </item>
       <item path="lib/common/shapes.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/common/utils.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/COPYRIGHTS" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/Makefile" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/README" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/boxc100.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/circle1.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/circle2.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/circle3.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/crazybox1.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/crazybox2.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/defs.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/geometry.cc" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="lib/old/geometry.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/guitar.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/mps2eps" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/parse.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/poly2tri" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/predicates.cc" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="lib/old/sample1.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/sample2.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/sample3.bdm" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/splay.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="lib/old/superior.bdm" ex="false" tool="3" flavor2="0">
       </item>
       <item path="lib/poly2tri.h" ex="false" tool="3" flavor2="0">
       </item>

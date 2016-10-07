@@ -35,9 +35,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/lib/clipper/cpp/clipper.o \
 	${OBJECTDIR}/lib/common/shapes.o \
-	${OBJECTDIR}/lib/old/geometry.o \
-	${OBJECTDIR}/lib/old/predicates.o \
 	${OBJECTDIR}/lib/sweep/advancing_front.o \
 	${OBJECTDIR}/lib/sweep/cdt.o \
 	${OBJECTDIR}/lib/sweep/sweep.o \
@@ -73,20 +72,15 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/lcpc: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/lcpc ${OBJECTFILES} ${LDLIBSOPTIONS} -lgdal
 
+${OBJECTDIR}/lib/clipper/cpp/clipper.o: lib/clipper/cpp/clipper.cpp 
+	${MKDIR} -p ${OBJECTDIR}/lib/clipper/cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -I/usr/include/gdal -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/clipper/cpp/clipper.o lib/clipper/cpp/clipper.cpp
+
 ${OBJECTDIR}/lib/common/shapes.o: lib/common/shapes.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/common
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -I/usr/include/gdal -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/common/shapes.o lib/common/shapes.cc
-
-${OBJECTDIR}/lib/old/geometry.o: lib/old/geometry.cc 
-	${MKDIR} -p ${OBJECTDIR}/lib/old
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/old/geometry.o lib/old/geometry.cc
-
-${OBJECTDIR}/lib/old/predicates.o: lib/old/predicates.cc 
-	${MKDIR} -p ${OBJECTDIR}/lib/old
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/old/predicates.o lib/old/predicates.cc
 
 ${OBJECTDIR}/lib/sweep/advancing_front.o: lib/sweep/advancing_front.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep

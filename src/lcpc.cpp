@@ -23,6 +23,85 @@
 #include <tr1/functional>
 #include <tr1/unordered_set>
 
+#include "../lib/clipper/cpp/clipper.hpp"
+
+std::vector<std::vector<std::vector < p2t::Point*>>> simplify(std::vector<std::vector < p2t::Point*>> polygon) {
+    int scale = 1000;
+    ClipperLib::Paths paths;
+    bool outer = true;
+    for (std::vector<p2t::Point*> ring : polygon) {
+        paths.push_back(ClipperLib::Path{});
+        for (unsigned int i = 0; i < ring.size(); i++) {
+            p2t::Point* point;
+            if (!outer) {
+                point = ring[i];
+            } else {
+                point = ring[ring.size() - 1 - i];
+            }
+            paths.back().push_back(ClipperLib::IntPoint(point->x*scale, point->y * scale));
+        }
+    }
+    for (ClipperLib::Path path : paths) {
+        std::cout << "path:\n";
+        for (ClipperLib::IntPoint pt : path) {
+            std::cout << pt.X << "," << pt.Y << std::endl;
+        }
+    }
+    std::cout << "\nsimplifying\n\n";
+    ClipperLib::SimplifyPolygons(paths, ClipperLib::pftEvenOdd);
+    std::vector<ClipperLib::Path> holes;
+    std::vector<std::vector<std::vector < p2t::Point*>>> out;
+
+    for (ClipperLib::Path path : paths) {
+        if (ClipperLib::Orientation(path)) {
+            std::vector < p2t::Point*> outer;
+            for (ClipperLib::IntPoint ip : path) {
+                outer.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
+            }
+            out.push_back(std::vector<std::vector < p2t::Point*>>
+            {
+                outer
+            });
+        } else {
+            holes.push_back(path);
+        }
+    }
+    std::cout << "halfway\n";
+    for (ClipperLib::Path hole : holes) {
+        std::cout << "hole\n";
+
+        std::vector < p2t::Point*> inner;
+
+        for (unsigned int i = 0; i < hole.size(); i++) {
+            std::cout<<"i: "<<i<<std::endl;
+            ClipperLib::IntPoint ip = hole.at(hole.size() - 1 - i);
+            inner.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
+        }
+
+        int outIndex = 0;
+        for (ClipperLib::Path path : paths) {
+            if (ClipperLib::Orientation(path)) {
+                if (ClipperLib::PointInPolygon(hole.at(0), path) != 0) {
+                    out.at(outIndex).push_back(inner);
+                }
+                outIndex++;
+            }
+        }
+    }
+
+    for (std::vector<std::vector < p2t::Point*>> p : out) {
+        std::cout << "polygon:" << std::endl;
+        for (std::vector < p2t::Point*> ring : p) {
+            std::cout << "  ring:" << std::endl;
+            for (p2t::Point* pt : ring) {
+                std::cout << "    " << pt->x << "," << pt->y << std::endl;
+            }
+        }
+    }
+    return out;
+
+}
+
 bool inside(OGRPolygon* polygon, OGRPoint* point) {
     if (polygon->getExteriorRing()->isPointInRing(point)) {
         for (unsigned int ri = 0; ri < polygon->getNumInteriorRings(); ri++) {
@@ -292,7 +371,7 @@ void writePoints(std::deque<const Coords*> results, std::string outputfile, cons
 
     if (!overwrite) {
         outputfile = validateOutfile(driver, outputfile);
-    }else if (fileExists(outputfile)){
+    } else if (fileExists(outputfile)) {
         driver->DeleteDataSource((outputfile).c_str());
     }
     pointDS = driver->CreateDataSource((outputfile).c_str(), NULL);
@@ -353,7 +432,7 @@ void writeOutput(std::deque<const Coords*> results, std::string outputfile, cons
     if (!overwrite) {
         outputfile = validateOutfile(driver, outputfile);
 
-    } else if ( fileExists(outputfile)) {
+    } else if (fileExists(outputfile)) {
         driver->DeleteDataSource((outputfile).c_str());
     }
     pathDS = driver->CreateDataSource((outputfile).c_str(), NULL);
@@ -469,6 +548,29 @@ int main(int argc, char* argv[]) {
     //"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500
     //"${OUTPUT_PATH}" testarea.shp targets.shp start.shp friction output 500
 
+    std::vector<std::vector < p2t::Point*>> polygon
+    {
+        {
+            new p2t::Point{0, 0},
+            new p2t::Point{1, 0},
+            new p2t::Point{0, 1},
+            new p2t::Point{1, 1}
+        },
+        {
+            new p2t::Point{0.3, 0.1},
+            new p2t::Point{0.7, 0.1},
+            new p2t::Point{0.5, 0.4},
+        },
+        {
+            new p2t::Point{0.3, 0.9},
+            new p2t::Point{0.7, 0.9},
+            new p2t::Point{0.5, 0.6},
+        }
+
+    };
+    simplify(polygon);
+
+    return 0;
 
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
         std::cout << "This program is used to search for least cost paths in polygonal costsurface.\n";
