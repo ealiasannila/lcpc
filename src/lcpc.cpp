@@ -25,34 +25,51 @@
 
 #include "../lib/clipper/cpp/clipper.hpp"
 
-std::vector<std::vector<std::vector < p2t::Point*>>> simplify(std::vector<std::vector < p2t::Point*>> polygon) {
+bool comparePolys(OGRPolygon* ogr, std::vector<std::vector<p2t::Point*>> p2tp) {
+    if (ogr->getNumInteriorRings() != p2tp.size() - 1) {
+        std::cout << "num of int rings: " << ogr->getNumInteriorRings() << " vs. " << p2tp.size() - 1 << std::endl;
+        return false;
+    }
+    if (ogr->getExteriorRing()->getNumPoints() != p2tp[0].size()) {
+        std::cout << "ext ring size: " << ogr->getExteriorRing()->getNumPoints() << " vs. " << p2tp[0].size() << std::endl;
+
+        return false;
+    }
+    for (int i = 0; i < p2tp.size(); i++) {
+        if (ogr->getInteriorRing(i)->getNumPoints() != p2tp[i + 1].size()) {
+            std::cout << "int ring #"<<i+1<<" ring size: " << ogr->getInteriorRing(i)->getNumPoints() << " vs. " << p2tp[i+1].size() << std::endl;
+            return false;
+        }
+    }
+    return true;
+
+}
+
+std::vector<std::vector<std::vector < p2t::Point*>>> simplify(OGRPolygon * polygon) {
     int scale = 1000;
     ClipperLib::Paths paths;
-    bool outer = true;
-    for (std::vector<p2t::Point*> ring : polygon) {
-        paths.push_back(ClipperLib::Path{});
-        for (unsigned int i = 0; i < ring.size(); i++) {
-            p2t::Point* point;
-            if (!outer) {
-                point = ring[i];
-            } else {
-                point = ring[ring.size() - 1 - i];
-            }
-            paths.back().push_back(ClipperLib::IntPoint(point->x*scale, point->y * scale));
+    paths.push_back(ClipperLib::Path{});
+    OGRLineString* ext = polygon->getExteriorRing();
+    for (int i = 0; i < ext->getNumPoints(); i++) {
+        int index = ext->getNumPoints() - 1 - i;
+        paths.back().push_back(ClipperLib::IntPoint(ext->getX(index) * scale, ext->getY(index) * scale));
+    }
+
+    for (int i = 0; i < polygon->getNumInteriorRings(); i++) {
+        OGRLineString* inter = polygon->getInteriorRing(i);
+        for (int j = 0; j < inter->getNumPoints(); j++) {
+            paths.back().push_back(ClipperLib::IntPoint(inter->getX(j) * scale, inter->getY(j) * scale));
         }
     }
-    for (ClipperLib::Path path : paths) {
-        std::cout << "path:\n";
-        for (ClipperLib::IntPoint pt : path) {
-            std::cout << pt.X << "," << pt.Y << std::endl;
-        }
-    }
-    std::cout << "\nsimplifying\n\n";
+
     ClipperLib::SimplifyPolygons(paths, ClipperLib::pftEvenOdd);
-    std::vector<ClipperLib::Path> holes;
+
+    std::vector<unsigned int> holes;
+    std::vector<unsigned int> outers;
     std::vector<std::vector<std::vector < p2t::Point*>>> out;
 
-    for (ClipperLib::Path path : paths) {
+    for (int i = 0; i < paths.size(); i++) {
+        ClipperLib::Path path = paths[i];
         if (ClipperLib::Orientation(path)) {
             std::vector < p2t::Point*> outer;
             for (ClipperLib::IntPoint ip : path) {
@@ -62,46 +79,36 @@ std::vector<std::vector<std::vector < p2t::Point*>>> simplify(std::vector<std::v
             {
                 outer
             });
+            outers.push_back(i);
         } else {
-            holes.push_back(path);
+            holes.push_back(i);
         }
     }
-    std::cout << "halfway\n";
-    for (ClipperLib::Path hole : holes) {
-        std::cout << "hole\n";
 
+    for (unsigned int hole : holes) {
         std::vector < p2t::Point*> inner;
 
-        for (unsigned int i = 0; i < hole.size(); i++) {
-            std::cout<<"i: "<<i<<std::endl;
-            ClipperLib::IntPoint ip = hole.at(hole.size() - 1 - i);
+        for (unsigned int i = 0; i < paths[hole].size(); i++) {
+            ClipperLib::IntPoint ip = paths[hole].at(paths[hole].size() - 1 - i);
             inner.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
         }
-
-        int outIndex = 0;
-        for (ClipperLib::Path path : paths) {
-            if (ClipperLib::Orientation(path)) {
-                if (ClipperLib::PointInPolygon(hole.at(0), path) != 0) {
-                    out.at(outIndex).push_back(inner);
-                }
-                outIndex++;
+        unsigned int outIndex = 0;
+        for (unsigned int outer : outers) {
+            if (ClipperLib::PointInPolygon(paths[hole].at(0), paths[outer]) != 0) {
+                out.at(outIndex).push_back(inner);
             }
+            outIndex++;
         }
     }
 
-    for (std::vector<std::vector < p2t::Point*>> p : out) {
-        std::cout << "polygon:" << std::endl;
-        for (std::vector < p2t::Point*> ring : p) {
-            std::cout << "  ring:" << std::endl;
-            for (p2t::Point* pt : ring) {
-                std::cout << "    " << pt->x << "," << pt->y << std::endl;
-            }
-        }
+    if (!comparePolys(polygon, out[0])) {
+        std::cout << "CHANGED!\n";
     }
     return out;
 
 }
 
+/*
 bool inside(OGRPolygon* polygon, OGRPoint* point) {
     if (polygon->getExteriorRing()->isPointInRing(point)) {
         for (unsigned int ri = 0; ri < polygon->getNumInteriorRings(); ri++) {
@@ -112,6 +119,33 @@ bool inside(OGRPolygon* polygon, OGRPoint* point) {
         return true;
     }
     return false;
+}
+ */
+
+
+
+bool inside(std::vector<std::vector<p2t::Point*>> polygon, p2t::Point* point) {
+    bool exterior = true;
+    for (std::vector<p2t::Point*> ring : polygon) {
+
+        int i, j = 0;
+        bool c = false;
+        for (i = 0, j = ring.size() - 1; i < ring.size(); j = i++) {
+            p2t::Point* ringPoint = ring[i];
+            p2t::Point* ringPoint2 = ring[j];
+            if (((ringPoint->y > point->y) != (ringPoint2->y > point->y)) &&
+                    (point->x < (ringPoint2->x - ringPoint->x) * (point->y - ringPoint->y) / (ringPoint2->y - ringPoint->y) + ringPoint->x))
+                c = !c;
+        }
+        if (exterior and !c) {
+            return false;
+        }
+        if (!exterior and c) {
+            return false;
+        }
+        exterior = false;
+    }
+    return true;
 }
 
 void checkCRS(OGRLayer* csLr, OGRLayer* targetLr, OGRLayer* startLr) {
@@ -217,58 +251,39 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
         if (csGeometry != NULL
                 && wkbFlatten(csGeometry->getGeometryType()) == wkbPolygon) {
             OGRPolygon *csPolygon = (OGRPolygon *) csGeometry;
-            OGRLinearRing* extRing = csPolygon->getExteriorRing();
 
+            OGRLinearRing* extRing = csPolygon->getExteriorRing();
             if (extRing->isClockwise()) {
                 extRing->reverseWindingOrder();
             }
 
-            std::vector<std::vector < p2t::Point*>> polygon;
-            polygon.push_back(std::vector<p2t::Point*>{});
-
-            int ringsize = extRing->getNumPoints();
-
-
-            for (unsigned int i = 0; i < ringsize; i++) {
-                p2t::Point* point = new p2t::Point(extRing->getX(i), extRing->getY(i));
-                polygon[0].push_back(point);
-            }
-            delete polygon[0].back();
-            polygon[0].pop_back();
-
-
             for (unsigned int ri = 0; ri < csPolygon->getNumInteriorRings(); ri++) {
-                polygon.push_back(std::vector<p2t::Point*>{});
                 OGRLinearRing* intRing = csPolygon->getInteriorRing(ri);
                 if (intRing->isClockwise()) {
                     intRing->reverseWindingOrder();
                 }
-                ringsize = intRing->getNumPoints();
+            }
 
-                for (unsigned int i = 0; i < ringsize; i++) {
-                    p2t::Point* point = new p2t::Point(intRing->getX(i), intRing->getY(i));
-                    polygon[ri + 1].push_back(point);
+            std::vector<std::vector<std::vector<p2t::Point*> > > sPolygons = simplify(csPolygon);
+
+            for (std::vector<std::vector<p2t::Point*> > polygon : sPolygons) {
+                if (maxd > 0) {
+                    intermidiatePoints(&polygon, maxd);
                 }
-                delete polygon[ri + 1].back();
-                polygon[ri + 1].pop_back();
-            }
+                finder->addPolygon(polygon, csFtre->GetFieldAsDouble(frictionField));
 
-            if (maxd > 0) {
-                intermidiatePoints(&polygon, maxd);
-            }
-            finder->addPolygon(polygon, csFtre->GetFieldAsDouble(frictionField));
-
-            if (inside(csPolygon, startPoint)) {
-                finder->addStartPoint(startp2t, pIdx);
-            }
-            for (int i = 0; i < targetOGRPoints.size(); i++) {
-                if (inside(csPolygon, targetOGRPoints[i])) {
-                    finder->addSteinerPoint(new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY()), pIdx);
+                if (inside(polygon, startp2t)) {
+                    finder->addStartPoint(startp2t, pIdx);
                 }
+                for (int i = 0; i < targetOGRPoints.size(); i++) {
+                    p2t::Point* targetp2t = new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY());
+                    if (inside(polygon, targetp2t)) {
+                        finder->addSteinerPoint(targetp2t, pIdx);
+                    }
+                }
+                pIdx++;
             }
 
-
-            pIdx++;
 
         } else {
             printf("no polygon geometry\n");
@@ -548,30 +563,26 @@ int main(int argc, char* argv[]) {
     //"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500
     //"${OUTPUT_PATH}" testarea.shp targets.shp start.shp friction output 500
 
-    std::vector<std::vector < p2t::Point*>> polygon
-    {
-        {
-            new p2t::Point{0, 0},
-            new p2t::Point{1, 0},
-            new p2t::Point{0, 1},
-            new p2t::Point{1, 1}
-        },
-        {
-            new p2t::Point{0.3, 0.1},
-            new p2t::Point{0.7, 0.1},
-            new p2t::Point{0.5, 0.4},
-        },
-        {
-            new p2t::Point{0.3, 0.9},
-            new p2t::Point{0.7, 0.9},
-            new p2t::Point{0.5, 0.6},
-        }
+    /*
 
-    };
-    simplify(polygon);
+    OGRPolygon polygon;
+    OGRLinearRing ext;
+    ext.addPoint(0, 0);
+    ext.addPoint(10, 0);
+    ext.addPoint(10, 10);
+    ext.addPoint(5, 10);
+    ext.addPoint(3, 5);
+    ext.addPoint(7, 5);
+    ext.addPoint(5, 10);
+    ext.addPoint(0, 10);
+
+    polygon.addRing(&ext);
+
+    simplify(&polygon);
+
 
     return 0;
-
+     */
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
         std::cout << "This program is used to search for least cost paths in polygonal costsurface.\n";
 
