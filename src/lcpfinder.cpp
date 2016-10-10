@@ -8,6 +8,7 @@
 #include "lcpfinder.h"
 #include <stdexcept>      // std::out_of_range
 #include "defs.h"
+#include <iomanip>
 
 /*
  * Finds opposing by looking up intersection of the immidiate neighbours of either end of the base.
@@ -150,8 +151,10 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
                 break;
             }
         }
+        
+        
         minheap.pop();
-        nSet neighbours = findNeighbours(node);
+        nSet neighbours = findNeighbours(node); 
         for (std::pair<const Coords*, int> p : neighbours) {
             const Coords* n = p.first;
             double d{node->getToStart() + eucDistance(node, n) * this->frictions[p.second]};

@@ -25,104 +25,85 @@
 
 #include "../lib/clipper/cpp/clipper.hpp"
 
+void savePolygon(std::vector<std::vector<p2t::Point*>> p2tp, int i) {
+    std::cout << "savePolygon\n";
+   
+    std::cout << p2tp[0].size() << std::endl;
+    std::cout << i << std::endl;
+
+    OGRSFDriver *driver;
+    OGRRegisterAll();
+    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+    OGRDataSource *pointDS;
+
+    std::string outputpolygon = "outpolygon" + std::to_string(i) + ".shp";
+
+    std::cout << outputpolygon << std::endl;
+
+    pointDS = driver->CreateDataSource(outputpolygon.c_str(), NULL);
+
+
+    if (pointDS == NULL) {
+        printf("Creation of output file failed.\n");
+        exit(1);
+    }
+    OGRLayer *pointLayer;
+    OGRSpatialReference sr;
+    sr.importFromEPSG(3067);
+
+    pointLayer = pointDS->CreateLayer("polygon", &sr, wkbPolygon, NULL);
+
+    if (pointLayer == NULL) {
+        printf("Point layer creation failed.\n");
+        exit(1);
+    }
+
+    OGRFeature *poFeature;
+    poFeature = OGRFeature::CreateFeature(pointLayer->GetLayerDefn());
+
+    OGRPolygon poly;
+
+    for (std::vector<p2t::Point*> ring : p2tp) {
+        OGRLinearRing lr;
+
+        for (p2t::Point* pt : ring) {
+            lr.addPoint(pt->x, pt->y);
+        }
+        poly.addRing(&lr);
+    }
+
+
+    poFeature->SetGeometry(&poly);
+    if (pointLayer->CreateFeature(poFeature) != OGRERR_NONE) {
+        printf("Failed to create feature in shapefile.\n");
+        exit(1);
+    }
+    std::cout << "hello2\n";
+    OGRFeature::DestroyFeature(poFeature);
+
+    OGRDataSource::DestroyDataSource(pointDS);
+    std::cout << "done saving\n";
+}
+
 bool comparePolys(OGRPolygon* ogr, std::vector<std::vector<p2t::Point*>> p2tp) {
+    if (ogr->getExteriorRing()->getNumPoints() != p2tp[0].size()) {
+        std::cout << "ext ring size: " << ogr->getExteriorRing()->getNumPoints() << " vs. " << p2tp[0].size() << std::endl;
+        return false;
+    }
+
     if (ogr->getNumInteriorRings() != p2tp.size() - 1) {
         std::cout << "num of int rings: " << ogr->getNumInteriorRings() << " vs. " << p2tp.size() - 1 << std::endl;
         return false;
     }
-    if (ogr->getExteriorRing()->getNumPoints() != p2tp[0].size()) {
-        std::cout << "ext ring size: " << ogr->getExteriorRing()->getNumPoints() << " vs. " << p2tp[0].size() << std::endl;
-
-        return false;
-    }
     for (int i = 0; i < p2tp.size(); i++) {
         if (ogr->getInteriorRing(i)->getNumPoints() != p2tp[i + 1].size()) {
-            std::cout << "int ring #"<<i+1<<" ring size: " << ogr->getInteriorRing(i)->getNumPoints() << " vs. " << p2tp[i+1].size() << std::endl;
+            std::cout << "int ring #" << i + 1 << " ring size: " << ogr->getInteriorRing(i)->getNumPoints() << " vs. " << p2tp[i + 1].size() << std::endl;
             return false;
         }
     }
     return true;
 
 }
-
-std::vector<std::vector<std::vector < p2t::Point*>>> simplify(OGRPolygon * polygon) {
-    int scale = 1000;
-    ClipperLib::Paths paths;
-    paths.push_back(ClipperLib::Path{});
-    OGRLineString* ext = polygon->getExteriorRing();
-    for (int i = 0; i < ext->getNumPoints(); i++) {
-        int index = ext->getNumPoints() - 1 - i;
-        paths.back().push_back(ClipperLib::IntPoint(ext->getX(index) * scale, ext->getY(index) * scale));
-    }
-
-    for (int i = 0; i < polygon->getNumInteriorRings(); i++) {
-        OGRLineString* inter = polygon->getInteriorRing(i);
-        for (int j = 0; j < inter->getNumPoints(); j++) {
-            paths.back().push_back(ClipperLib::IntPoint(inter->getX(j) * scale, inter->getY(j) * scale));
-        }
-    }
-
-    ClipperLib::SimplifyPolygons(paths, ClipperLib::pftEvenOdd);
-
-    std::vector<unsigned int> holes;
-    std::vector<unsigned int> outers;
-    std::vector<std::vector<std::vector < p2t::Point*>>> out;
-
-    for (int i = 0; i < paths.size(); i++) {
-        ClipperLib::Path path = paths[i];
-        if (ClipperLib::Orientation(path)) {
-            std::vector < p2t::Point*> outer;
-            for (ClipperLib::IntPoint ip : path) {
-                outer.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
-            }
-            out.push_back(std::vector<std::vector < p2t::Point*>>
-            {
-                outer
-            });
-            outers.push_back(i);
-        } else {
-            holes.push_back(i);
-        }
-    }
-
-    for (unsigned int hole : holes) {
-        std::vector < p2t::Point*> inner;
-
-        for (unsigned int i = 0; i < paths[hole].size(); i++) {
-            ClipperLib::IntPoint ip = paths[hole].at(paths[hole].size() - 1 - i);
-            inner.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
-        }
-        unsigned int outIndex = 0;
-        for (unsigned int outer : outers) {
-            if (ClipperLib::PointInPolygon(paths[hole].at(0), paths[outer]) != 0) {
-                out.at(outIndex).push_back(inner);
-            }
-            outIndex++;
-        }
-    }
-
-    if (!comparePolys(polygon, out[0])) {
-        std::cout << "CHANGED!\n";
-    }
-    return out;
-
-}
-
-/*
-bool inside(OGRPolygon* polygon, OGRPoint* point) {
-    if (polygon->getExteriorRing()->isPointInRing(point)) {
-        for (unsigned int ri = 0; ri < polygon->getNumInteriorRings(); ri++) {
-            if (polygon->getInteriorRing(ri)->isPointInRing(point)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
-}
- */
-
-
 
 bool inside(std::vector<std::vector<p2t::Point*>> polygon, p2t::Point* point) {
     bool exterior = true;
@@ -148,6 +129,67 @@ bool inside(std::vector<std::vector<p2t::Point*>> polygon, p2t::Point* point) {
     return true;
 }
 
+std::vector<std::vector<std::vector < p2t::Point*>>> simplify(OGRPolygon * polygon) {
+    int scale = 10000;
+    ClipperLib::Paths paths;
+    paths.push_back(ClipperLib::Path{});
+    OGRLineString* ext = polygon->getExteriorRing();
+    for (int i = 0; i < ext->getNumPoints(); i++) {
+        int index = ext->getNumPoints() - 1 - i;
+        paths.back().push_back(ClipperLib::IntPoint(ext->getX(index) * scale, ext->getY(index) * scale));
+    }
+
+
+    for (int i = 0; i < polygon->getNumInteriorRings(); i++) {
+        paths.push_back(ClipperLib::Path{});
+        OGRLineString* inter = polygon->getInteriorRing(i);
+        for (int j = 0; j < inter->getNumPoints(); j++) {
+            paths.back().push_back(ClipperLib::IntPoint(inter->getX(j) * scale, inter->getY(j) * scale));
+        }
+    }
+
+    std::vector<std::vector<std::vector < p2t::Point*>>> out;
+
+   
+    ClipperLib::SimplifyPolygons(paths, ClipperLib::pftEvenOdd);
+
+    std::vector<unsigned int> holes;
+    std::vector<unsigned int> outers;
+    for (int i = 0; i < paths.size(); i++) {
+        ClipperLib::Path path = paths[i];
+        if (ClipperLib::Orientation(path)) {
+            std::vector < p2t::Point*> outer;
+            for (ClipperLib::IntPoint ip : path) {
+                outer.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
+            }
+            out.push_back(std::vector<std::vector < p2t::Point*>>
+            {
+                outer
+            });
+        } else {
+            holes.push_back(i);
+        }
+    }
+
+    for (unsigned int hole : holes) {
+        std::vector < p2t::Point*> inner;
+
+        for (unsigned int i = 0; i < paths[hole].size(); i++) {
+            ClipperLib::IntPoint ip = paths[hole].at(paths[hole].size() - 1 - i);
+            inner.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
+        }
+        unsigned int outIndex = 0;
+        for (std::vector<std::vector < p2t::Point*>> outer : out) {
+            if (inside(outer, inner[0])) {
+                out.at(outIndex).push_back(inner);
+            }
+            outIndex++;
+        }
+    }
+    return out;
+
+}
+
 void checkCRS(OGRLayer* csLr, OGRLayer* targetLr, OGRLayer* startLr) {
     if (!csLr->GetSpatialRef()->IsProjected()) {
         std::cout << "All source files must be in same projected coordinate system. Geocentric coordinate systems are not supported.\n";
@@ -168,6 +210,7 @@ void checkCRS(OGRLayer* csLr, OGRLayer* targetLr, OGRLayer* startLr) {
         std::cout << "WARNING: Unknown start layer spatial reference EPSG.\n";
     }
     if (csEpsg != targetEpsg or csEpsg != startEpsg) {
+
         std::cout << "ERROR: Cost surface CRS EPSG number doesn't match that of start or target layers. All source files must be in same EPSG projection\n";
         exit(1);
     }
@@ -293,6 +336,7 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
     }
 
     for (OGRFeature* targetPt : targetPointers) {
+
         OGRFeature::DestroyFeature(targetPt);
 
     }
@@ -312,6 +356,7 @@ void readCostSurfaceDummy(const char* costSurface, const char* targets, const ch
     std::vector<std::vector < p2t::Point*>> polygon
     {
         {
+
             new p2t::Point(0, 0), new p2t::Point(1, 0), new p2t::Point(1, 1), new p2t::Point(0, 1)
         }
     };
@@ -325,6 +370,7 @@ bool fileExists(const std::string& name) {
         fclose(file);
         return true;
     } else {
+
         return false;
     }
 }
@@ -338,6 +384,7 @@ bool testDriver(OGRSFDriver* driver) {
         std::vector<std::string> yesOptions = {"yes", "Yes", "YES", "y", "Y"};
         for (std::string yes : yesOptions) {
             if (useShp == yes) {
+
                 return false;
                 break;
             }
@@ -363,6 +410,7 @@ std::string validateOutfile(OGRSFDriver* driver, std::string outputfile) {
             }
         }
         if (!ow) {
+
             std::cout << "Give new outputfilename that is not in use: \n";
             std::cin >> outputfile;
         }
@@ -421,6 +469,7 @@ void writePoints(std::deque<const Coords*> results, std::string outputfile, cons
         poFeature->SetGeometry(&ogrpt);
 
         if (pointLayer->CreateFeature(poFeature) != OGRERR_NONE) {
+
             printf("Failed to create feature in shapefile.\n");
             exit(1);
         }
@@ -484,6 +533,7 @@ void writeOutput(std::deque<const Coords*> results, std::string outputfile, cons
         exit(1);
     }
     if (pathLayer->CreateField(&yField) != OGRERR_NONE) {
+
         printf("Creating Cost field failed.\n");
         exit(1);
     }
@@ -547,6 +597,7 @@ void writeOutput(std::deque<const Coords*> results, std::string outputfile, cons
         poFeature->SetGeometry(ls.second);
 
         if (pathLayer->CreateFeature(poFeature) != OGRERR_NONE) {
+
             printf("Failed to create feature in shapefile.\n");
             exit(1);
         }

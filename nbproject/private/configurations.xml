@@ -24,16 +24,18 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testarea.shp targets.shp start.shp friction output 500</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500 "ESRI Shapefile"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500 "ESRI Shapefile" astar</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" looper.shp looper_targets.shp looper_start.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" looper.shp loopper_targets.shp loopper_start.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" complex.shp ltargets.shp lstart.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommand>
+        <runcommand>"${OUTPUT_PATH}" complex.shp ltargets.shp lstart.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <console-type>2</console-type>
