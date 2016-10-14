@@ -9,7 +9,7 @@
 #define SRC_MINHEAP_H_
 #include <vector>
 #include <functional>
-#include <ctime>
+#include <queue>
 
 template<class T, typename T2>
 class MinHeap {

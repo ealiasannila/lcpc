@@ -52,8 +52,6 @@
       <logicalFolder name="src" displayName="src" projectFiles="true">
         <itemPath>src/Coords.cpp</itemPath>
         <itemPath>src/Coords.h</itemPath>
-        <itemPath>src/Edge.cpp</itemPath>
-        <itemPath>src/Edge.h</itemPath>
         <itemPath>src/Funnel.cpp</itemPath>
         <itemPath>src/Funnel.h</itemPath>
         <itemPath>src/defs.h</itemPath>
@@ -91,6 +89,7 @@
       </toolsSet>
       <compileType>
         <ccTool>
+          <developmentMode>6</developmentMode>
           <standard>11</standard>
           <commandlineTool>g++</commandlineTool>
           <incDir>
@@ -172,10 +171,6 @@
       <item path="src/Coords.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Coords.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="src/Edge.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/Edge.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/Funnel.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -283,10 +278,6 @@
       <item path="src/Coords.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Coords.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="src/Edge.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/Edge.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/Funnel.cpp" ex="false" tool="1" flavor2="0">
       </item>

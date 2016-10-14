@@ -6,11 +6,13 @@
  */
 
 #include "Coords.h"
-#include "sorted_vector.h"
 #include <sstream>
 #include <math.h>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
+#include <limits>
+
 
 Coords::Coords(double newx, double newy) {
     x = newx;
@@ -39,8 +41,6 @@ nContainer* Coords::getRightNeighbours(int polygon) const {
     try {
         return &this->rightNeighbours[polygon];
     } catch (const std::out_of_range& oor) {
-        std::cout << "NoNeighbours: \n";
-        std::cout << "polygon: " << polygon;
         exit(1);
     }
 }
@@ -49,8 +49,6 @@ nContainer* Coords::getLeftNeighbours(int polygon) const {
     try {
         return &this->leftNeighbours[polygon];
     } catch (const std::out_of_range& oor) {
-        std::cout << "NoNeighbours: \n";
-        std::cout << "polygon: " << polygon;
         exit(1);
     }
 }
@@ -58,8 +56,6 @@ SortedVector<const Coords*>* Coords::getNeighbours(int polygon) const {
     try {
         return &this->neighbours[polygon];
     } catch (const std::out_of_range& oor) {
-        std::cout << "NoNeighbours: \n";
-        std::cout << "polygon: " << polygon;
         exit(1);
     }
 }
@@ -84,9 +80,6 @@ void Coords::addNeighbours(const Coords* l, const Coords* r, int polygon) const 
         leftNeighbours[polygon].push_back(l);
         rightNeighbours[polygon].push_back(r);
     } catch (const std::out_of_range& oor) {
-        std::cout << "NoNeighbours: \n";
-        std::cout << this->toString();
-        std::cout << "polygon: " << polygon;
         exit(1);
     }
 }

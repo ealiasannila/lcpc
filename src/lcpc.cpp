@@ -13,21 +13,14 @@
 #include "../lib/poly2tri.h"
 #include <vector>
 #include <gdal/gdal.h>
-#include <gdal_priv.h>
 #include <gdal/ogrsf_frmts.h>
 #include <ctime>
 #include <string.h>
-#include <stdlib.h>
-#include "sorted_vector.h"
-
-#include <tr1/functional>
-#include <tr1/unordered_set>
-
-#include "../lib/clipper/cpp/clipper.hpp"
+#include<iostream>
 
 void savePolygon(std::vector<std::vector<p2t::Point*>> p2tp, int i) {
     std::cout << "savePolygon\n";
-   
+
     std::cout << p2tp[0].size() << std::endl;
     std::cout << i << std::endl;
 
@@ -105,91 +98,6 @@ bool comparePolys(OGRPolygon* ogr, std::vector<std::vector<p2t::Point*>> p2tp) {
 
 }
 
-bool inside(std::vector<std::vector<p2t::Point*>> polygon, p2t::Point* point) {
-    bool exterior = true;
-    for (std::vector<p2t::Point*> ring : polygon) {
-
-        int i, j = 0;
-        bool c = false;
-        for (i = 0, j = ring.size() - 1; i < ring.size(); j = i++) {
-            p2t::Point* ringPoint = ring[i];
-            p2t::Point* ringPoint2 = ring[j];
-            if (((ringPoint->y > point->y) != (ringPoint2->y > point->y)) &&
-                    (point->x < (ringPoint2->x - ringPoint->x) * (point->y - ringPoint->y) / (ringPoint2->y - ringPoint->y) + ringPoint->x))
-                c = !c;
-        }
-        if (exterior and !c) {
-            return false;
-        }
-        if (!exterior and c) {
-            return false;
-        }
-        exterior = false;
-    }
-    return true;
-}
-
-std::vector<std::vector<std::vector < p2t::Point*>>> simplify(OGRPolygon * polygon) {
-    int scale = 10000;
-    ClipperLib::Paths paths;
-    paths.push_back(ClipperLib::Path{});
-    OGRLineString* ext = polygon->getExteriorRing();
-    for (int i = 0; i < ext->getNumPoints(); i++) {
-        int index = ext->getNumPoints() - 1 - i;
-        paths.back().push_back(ClipperLib::IntPoint(ext->getX(index) * scale, ext->getY(index) * scale));
-    }
-
-
-    for (int i = 0; i < polygon->getNumInteriorRings(); i++) {
-        paths.push_back(ClipperLib::Path{});
-        OGRLineString* inter = polygon->getInteriorRing(i);
-        for (int j = 0; j < inter->getNumPoints(); j++) {
-            paths.back().push_back(ClipperLib::IntPoint(inter->getX(j) * scale, inter->getY(j) * scale));
-        }
-    }
-
-    std::vector<std::vector<std::vector < p2t::Point*>>> out;
-
-   
-    ClipperLib::SimplifyPolygons(paths, ClipperLib::pftEvenOdd);
-
-    std::vector<unsigned int> holes;
-    std::vector<unsigned int> outers;
-    for (int i = 0; i < paths.size(); i++) {
-        ClipperLib::Path path = paths[i];
-        if (ClipperLib::Orientation(path)) {
-            std::vector < p2t::Point*> outer;
-            for (ClipperLib::IntPoint ip : path) {
-                outer.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
-            }
-            out.push_back(std::vector<std::vector < p2t::Point*>>
-            {
-                outer
-            });
-        } else {
-            holes.push_back(i);
-        }
-    }
-
-    for (unsigned int hole : holes) {
-        std::vector < p2t::Point*> inner;
-
-        for (unsigned int i = 0; i < paths[hole].size(); i++) {
-            ClipperLib::IntPoint ip = paths[hole].at(paths[hole].size() - 1 - i);
-            inner.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
-        }
-        unsigned int outIndex = 0;
-        for (std::vector<std::vector < p2t::Point*>> outer : out) {
-            if (inside(outer, inner[0])) {
-                out.at(outIndex).push_back(inner);
-            }
-            outIndex++;
-        }
-    }
-    return out;
-
-}
-
 void checkCRS(OGRLayer* csLr, OGRLayer* targetLr, OGRLayer* startLr) {
     if (!csLr->GetSpatialRef()->IsProjected()) {
         std::cout << "All source files must be in same projected coordinate system. Geocentric coordinate systems are not supported.\n";
@@ -218,12 +126,11 @@ void checkCRS(OGRLayer* csLr, OGRLayer* targetLr, OGRLayer* startLr) {
 
 }
 
-void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder, const char* frictionField, const char* maxDist, OGRSpatialReference* sr) {
-    double maxd = atof(maxDist);
+void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder, const char* frictionField, std::string maxDist, OGRSpatialReference* sr) {
+    double maxd = atof(maxDist.c_str());
     OGRDataSource *csDS;
     csDS = OGRSFDriverRegistrar::Open(costSurface);
     if (csDS == NULL) {
-
         std::cout << costSurface;
         std::cout << " COST SURFACE NOT FOUND!\n";
         return;
@@ -322,6 +229,8 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
                     p2t::Point* targetp2t = new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY());
                     if (inside(polygon, targetp2t)) {
                         finder->addSteinerPoint(targetp2t, pIdx);
+                    } else {
+                        delete targetp2t;
                     }
                 }
                 pIdx++;
@@ -350,19 +259,6 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
     OGRDataSource::DestroyDataSource(targetDS);
 
 
-}
-
-void readCostSurfaceDummy(const char* costSurface, const char* targets, const char* start, LcpFinder* finder) {
-    std::vector<std::vector < p2t::Point*>> polygon
-    {
-        {
-
-            new p2t::Point(0, 0), new p2t::Point(1, 0), new p2t::Point(1, 1), new p2t::Point(0, 1)
-        }
-    };
-    finder->addPolygon(polygon, 1);
-    finder->addStartPoint(new p2t::Point(0.5, 0.5), 0);
-    finder->addSteinerPoint(new p2t::Point(0.7, 0.7), 0);
 }
 
 bool fileExists(const std::string& name) {
@@ -418,10 +314,10 @@ std::string validateOutfile(OGRSFDriver* driver, std::string outputfile) {
     return outputfile;
 }
 
-void writePoints(std::deque<const Coords*> results, std::string outputfile, const char *pszDriverName, OGRSpatialReference sr, bool overwrite) {
+void writePoints(std::deque<const Coords*> results, std::string outputfile, std::string pszDriverName, OGRSpatialReference sr, bool overwrite) {
     OGRSFDriver *driver;
     OGRRegisterAll();
-    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName);
+    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName.c_str());
 
     if (!overwrite) {
         if (!testDriver(driver)) {
@@ -482,11 +378,11 @@ void writePoints(std::deque<const Coords*> results, std::string outputfile, cons
 
 }
 
-void writeOutput(std::deque<const Coords*> results, std::string outputfile, const char *pszDriverName, OGRSpatialReference sr, bool overwrite) {
+void writeOutput(std::deque<const Coords*> results, std::string outputfile, std::string pszDriverName, OGRSpatialReference sr, bool overwrite) {
 
     OGRSFDriver *driver;
     OGRRegisterAll();
-    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName);
+    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName.c_str());
     if (!overwrite) {
         if (!testDriver(driver)) {
             driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
@@ -607,79 +503,84 @@ void writeOutput(std::deque<const Coords*> results, std::string outputfile, cons
     }
 
     OGRDataSource::DestroyDataSource(pathDS);
+
+}
+
+bool argExists(std::string argSwitch, char* argv[], int argc) {
+    for (int i = 0; i < argc; i++) {
+        if (argSwitch.compare(argv[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string getArgVal(std::string argSwitch, char* argv[], int argc) {
+    for (int i = 0; i < argc; i++) {
+        if (argSwitch.compare(argv[i]) == 0) {
+            return argv[i + 1];
+        }
+    }
 }
 
 int main(int argc, char* argv[]) {
-
-    //"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500
-    //"${OUTPUT_PATH}" testarea.shp targets.shp start.shp friction output 500
-
-    /*
-
-    OGRPolygon polygon;
-    OGRLinearRing ext;
-    ext.addPoint(0, 0);
-    ext.addPoint(10, 0);
-    ext.addPoint(10, 10);
-    ext.addPoint(5, 10);
-    ext.addPoint(3, 5);
-    ext.addPoint(7, 5);
-    ext.addPoint(5, 10);
-    ext.addPoint(0, 10);
-
-    polygon.addRing(&ext);
-
-    simplify(&polygon);
-
-
-    return 0;
-     */
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
-        std::cout << "This program is used to search for least cost paths in polygonal costsurface.\n";
-
+        std::cout << "This program is used to search for least cost paths in polygonal costsurface for more information see: URL.\n";
         std::cout << "USAGE:\n"
-                "The program requires 9 parameters to run correctly. Parameters should be in following order:\n"
+                "The program requires at least 4 parameters to run correctly. Parameters should be in following order:\n"
                 "\tname of cost surface file. (Supports formats supported by OGR)\n"
                 "\tname of target points file can be any number of points. All points must be inside cost surface polygons. (Supports formats supported by OGR)\n"
                 "\tname of start point file, must be single point inside one of the cost surface polygons. (Supports formats supported by OGR)\n"
                 "\tname of the friction field in cost surface\n"
-                "\toutput path file name, if no extension is given a folder will be assumed (at least with shapefile driver)\n"
-                "\toutput points file name, if no extension is given a folder will be assumed (at least with shapefile driver)\n"
-                "\tmaximum distance between nodes in cost surface. This is used to add temporary additional nodes during LCP calculation if nodes are too far apart.\n"
-                "\toutput driver name (Supports drivers supported by OGR)\n"
-                "\talgorithm to use in lcp search. Options are dijksra/astar. Using astar is recommended unless number of targetpoints is high compared to number of nodes."
-                "\toverwrite switch -o (if used will not prompt on anything and just overwrite all files)";
+                "Addittionally following parameters can be specified with formt <switch> <value> (for example -o out_path.shp):\n"
+                "\t -o output_path_file_name, if no extension is given a folder will be assumed (at least with shapefile driver)\n"
+                "\t -p output_points_file_name, if no extension is given a folder will be assumed (at least with shapefile driver)\n"
+                "\t -d maximum_distance_between_nodes in cost surface. Default value is 0 (no nodes added). This is used to add temporary additional nodes during LCP calculation if nodes are too far apart.\n"
+                "\t --driver output_driver_name. Default value is ESRI Shapefile (Supports drivers supported by OGR)\n"
+                "\t -a algorithm to use in lcp search. Astar is default value. Options are dijksra/astar. Using astar is recommended unless number of targetpoints is high compared to number of nodes."
+                "\t --overwrite if used will not prompt on anything and just overwrite all files";
         exit(0);
     }
 
+    /*
     std::cout << argc << " provided:";
     for (int i = 1; i < argc; i++) {
         std::cout << (i) << ": " << argv[i] << std::endl;
     }
+     */
 
-    if (argc != 10 and argc != 11) {
+    if (argc < 5) {
         std::cout << "Invalid arguments provided see \"lcp -h\" for details\n";
         return 0;
     }
     int alg = 1;
-    if (strcmp(argv[9], "astar") == 0) {
-        alg = 1;
-    } else if (strcmp(argv[9], "dijkstra") == 0) {
-        alg = 0;
-    } else {
-        std::cout << "unknown search algorithm. using A* (possible choises are \"astar\" or \"dijkstra\"\n";
+    if (argExists("-a", argv, argc)) {
+        std::string algArg = getArgVal("-a", argv, argc);
+        if (algArg.compare("astar") == 0) {
+            alg = 1;
+        } else if (algArg.compare("dijkstra") == 0) {
+            alg = 0;
+        } else {
+            std::cout << "unknown search algorithm. using A* (possible choises are \"astar\" or \"dijkstra\"\n";
+        }
     }
-    bool overwrite = false;
-    if (argc == 11 and strcmp(argv[10], "-o") == 0) {
-        overwrite = true;
+
+
+
+    bool overwrite = argExists("--overwrite", argv, argc);
+
+    std::string distance = "0";
+    if (argExists("-d", argv, argc)) {
+        distance = getArgVal("-d", argv, argc);
     }
+
     OGRRegisterAll();
     LcpFinder finder{};
     std::cout << "Reading cost surface...\n";
     OGRSpatialReference sr;
     std::clock_t begin = std::clock();
-    readCostSurface(argv[1], argv[2], argv[3], &finder, argv[4], argv[7], &sr);
-    //readCostSurfaceDummy("testpolygon.shp", "targets.shp", "start.shp", &finder);
+
+    readCostSurface(argv[1], argv[2], argv[3], &finder, argv[4], distance, &sr);
     double secs = double(std::clock() - begin) / CLOCKS_PER_SEC;
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     begin = std::clock();
@@ -687,9 +588,17 @@ int main(int argc, char* argv[]) {
     secs = double(std::clock() - begin) / CLOCKS_PER_SEC;
     std::cout << "\nSearch finished (took " << secs << "s). Writing results...\n";
 
+    std::string driver = "ESRI Shapefile";
+    if (argExists("--driver", argv, argc)) {
+        driver = getArgVal("--driver", argv, argc);
+    }
 
-    writeOutput(results, argv[5], argv[8], sr, overwrite);
-    writePoints(results, argv[6], argv[8], sr, overwrite);
+    if (argExists("-o", argv, argc)) {
+        writeOutput(results, getArgVal("-o", argv, argc), driver, sr, overwrite);
+    }
+    if (argExists("-p", argv, argc)) {
+        writePoints(results, getArgVal("-p", argv, argc), driver, sr, overwrite);
+    }
     std::cout << "All done!\n";
     return 0;
 }

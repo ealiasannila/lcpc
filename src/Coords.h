@@ -8,12 +8,7 @@
 #ifndef  Coords_H_
 #define  Coords_H_
 #include <string>
-#include <set>
-#include <map>
-#include <cmath>
-#include <limits>
 #include "defs.h"
-#include <tr1/unordered_map>
 #include "sorted_vector.h"
 
 class Coords {

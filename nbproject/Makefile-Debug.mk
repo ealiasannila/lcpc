@@ -42,7 +42,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/lib/sweep/sweep.o \
 	${OBJECTDIR}/lib/sweep/sweep_context.o \
 	${OBJECTDIR}/src/Coords.o \
-	${OBJECTDIR}/src/Edge.o \
 	${OBJECTDIR}/src/Funnel.o \
 	${OBJECTDIR}/src/lcpc.o \
 	${OBJECTDIR}/src/lcpfinder.o
@@ -75,57 +74,52 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/lcpc: ${OBJECTFILES}
 ${OBJECTDIR}/lib/clipper/cpp/clipper.o: lib/clipper/cpp/clipper.cpp 
 	${MKDIR} -p ${OBJECTDIR}/lib/clipper/cpp
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/clipper/cpp/clipper.o lib/clipper/cpp/clipper.cpp
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/clipper/cpp/clipper.o lib/clipper/cpp/clipper.cpp
 
 ${OBJECTDIR}/lib/common/shapes.o: lib/common/shapes.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/common
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/common/shapes.o lib/common/shapes.cc
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/common/shapes.o lib/common/shapes.cc
 
 ${OBJECTDIR}/lib/sweep/advancing_front.o: lib/sweep/advancing_front.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/advancing_front.o lib/sweep/advancing_front.cc
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/advancing_front.o lib/sweep/advancing_front.cc
 
 ${OBJECTDIR}/lib/sweep/cdt.o: lib/sweep/cdt.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/cdt.o lib/sweep/cdt.cc
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/cdt.o lib/sweep/cdt.cc
 
 ${OBJECTDIR}/lib/sweep/sweep.o: lib/sweep/sweep.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep.o lib/sweep/sweep.cc
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep.o lib/sweep/sweep.cc
 
 ${OBJECTDIR}/lib/sweep/sweep_context.o: lib/sweep/sweep_context.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep_context.o lib/sweep/sweep_context.cc
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep_context.o lib/sweep/sweep_context.cc
 
 ${OBJECTDIR}/src/Coords.o: src/Coords.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Coords.o src/Coords.cpp
-
-${OBJECTDIR}/src/Edge.o: src/Edge.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Edge.o src/Edge.cpp
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Coords.o src/Coords.cpp
 
 ${OBJECTDIR}/src/Funnel.o: src/Funnel.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Funnel.o src/Funnel.cpp
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Funnel.o src/Funnel.cpp
 
 ${OBJECTDIR}/src/lcpc.o: src/lcpc.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/lcpc.o src/lcpc.cpp
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/lcpc.o src/lcpc.cpp
 
 ${OBJECTDIR}/src/lcpfinder.o: src/lcpfinder.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/lcpfinder.o src/lcpfinder.cpp
+	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/lcpfinder.o src/lcpfinder.cpp
 
 # Subprojects
 .build-subprojects:

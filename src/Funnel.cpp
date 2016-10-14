@@ -7,7 +7,7 @@
 
 #include "Funnel.h"
 #include <sstream>
-#include <iostream>
+
 
 Funnel::Funnel(const Coords* l, const Coords* a, const Coords* r) {
 	lc.push_back(a);

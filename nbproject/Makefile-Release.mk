@@ -42,7 +42,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/lib/sweep/sweep.o \
 	${OBJECTDIR}/lib/sweep/sweep_context.o \
 	${OBJECTDIR}/src/Coords.o \
-	${OBJECTDIR}/src/Edge.o \
 	${OBJECTDIR}/src/Funnel.o \
 	${OBJECTDIR}/src/lcpc.o \
 	${OBJECTDIR}/src/lcpfinder.o
@@ -106,11 +105,6 @@ ${OBJECTDIR}/src/Coords.o: src/Coords.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Coords.o src/Coords.cpp
-
-${OBJECTDIR}/src/Edge.o: src/Edge.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Edge.o src/Edge.cpp
 
 ${OBJECTDIR}/src/Funnel.o: src/Funnel.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

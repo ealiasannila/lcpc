@@ -10,7 +10,6 @@
 #include <deque>
 #include "Coords.h"
 #include <string>
-#include <list>
 
 
 class Funnel {

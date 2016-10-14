@@ -6,9 +6,11 @@
  */
 
 #include "lcpfinder.h"
+#include <algorithm>
 #include <stdexcept>      // std::out_of_range
-#include "defs.h"
 #include <iomanip>
+#include <iostream>
+
 
 /*
  * Finds opposing by looking up intersection of the immidiate neighbours of either end of the base.

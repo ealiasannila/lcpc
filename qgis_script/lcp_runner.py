@@ -3,9 +3,9 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from subprocess import call
-from os.path import expanduser
+import os.path
+import inspect
 
-home = expanduser("~")
 
 #Here we define the input and outputs
 #====================================
@@ -24,4 +24,9 @@ home = expanduser("~")
 #=======================================
 
 progress.setInfo("See console for progress and additional information. Cancel button won't actually cancel execution of algorithm.")
-call([home+"/.qgis2/processing/scripts/lcpc", cost_surface, target_points,start_point, friction_field, output_path, output_points, str(max_distance), output_driver, algorithm, "-o"])
+
+filename = inspect.getframeinfo(inspect.currentframe()).filename
+path = os.path.dirname(os.path.abspath(filename))
+
+
+call([path+"/lcpc", cost_surface, target_points,start_point, friction_field, "-o", output_path, "-p", output_points, "-d", str(max_distance), "--driver", output_driver, "-a", algorithm, "--overwrite"])

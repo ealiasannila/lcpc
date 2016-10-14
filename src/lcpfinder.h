@@ -7,16 +7,15 @@
 
 #ifndef SRC_LCPFINDER_H_
 #define SRC_LCPFINDER_H_
-#include <algorithm>
-#include <iostream>
+
 #include "Coords.h"
 #include "Funnel.h"
 #include "minHeap.h"
 #include "geomfunc.h"
 #include "../lib/poly2tri.h"
-#include <tr1/functional>
 #include <tr1/unordered_set>
-#include <ctime>
+#include "defs.h"
+#include<limits>
 
 struct CoordsHasher {
 
