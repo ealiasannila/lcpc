@@ -5,7 +5,7 @@
  *      Author: elias
  */
 
-#include "Coords.h"
+#include "coords.h"
 #include <sstream>
 #include <math.h>
 #include <iostream>

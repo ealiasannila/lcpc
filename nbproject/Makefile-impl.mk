@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=lcpc
+PROJECTNAME=least_cost_path
 
 # Active Configuration
 DEFAULTCONF=Debug

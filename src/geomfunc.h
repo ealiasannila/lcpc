@@ -8,7 +8,7 @@
 #include "../lib/clipper/cpp/clipper.hpp"
 
 #include <gdal/ogrsf_frmts.h>
-#include "Coords.h"
+#include "coords.h"
 
 #ifndef SRC_GEOMFUNC_H_
 #define SRC_GEOMFUNC_H_

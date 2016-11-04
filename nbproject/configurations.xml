@@ -50,16 +50,16 @@
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="src" displayName="src" projectFiles="true">
-        <itemPath>src/Coords.cpp</itemPath>
-        <itemPath>src/Coords.h</itemPath>
-        <itemPath>src/Funnel.cpp</itemPath>
-        <itemPath>src/Funnel.h</itemPath>
+        <itemPath>src/coords.cpp</itemPath>
+        <itemPath>src/coords.h</itemPath>
         <itemPath>src/defs.h</itemPath>
+        <itemPath>src/funnel.cpp</itemPath>
+        <itemPath>src/funnel.h</itemPath>
         <itemPath>src/geomfunc.h</itemPath>
-        <itemPath>src/lcpc.cpp</itemPath>
         <itemPath>src/lcpfinder.cpp</itemPath>
         <itemPath>src/lcpfinder.h</itemPath>
-        <itemPath>src/minHeap.h</itemPath>
+        <itemPath>src/main.cpp</itemPath>
+        <itemPath>src/min_heap.h</itemPath>
         <itemPath>src/sorted_vector.h</itemPath>
       </logicalFolder>
     </logicalFolder>
@@ -168,25 +168,25 @@
       </item>
       <item path="lib/sweep/sweep_context.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="src/Coords.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/coords.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="src/Coords.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="src/Funnel.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/Funnel.h" ex="false" tool="3" flavor2="0">
+      <item path="src/coords.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/defs.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="src/geomfunc.h" ex="false" tool="3" flavor2="0">
+      <item path="src/funnel.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="src/lcpc.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/funnel.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/geomfunc.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/lcpfinder.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/lcpfinder.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="src/minHeap.h" ex="false" tool="3" flavor2="0">
+      <item path="src/main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/min_heap.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/sorted_vector.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -200,9 +200,16 @@
       <compileType>
         <cTool>
           <developmentMode>5</developmentMode>
+          <incDir>
+            <pElem>/usr/include</pElem>
+          </incDir>
         </cTool>
         <ccTool>
           <developmentMode>5</developmentMode>
+          <standard>11</standard>
+          <incDir>
+            <pElem>/usr/include/gdal</pElem>
+          </incDir>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -210,6 +217,12 @@
         <asmTool>
           <developmentMode>5</developmentMode>
         </asmTool>
+        <linkerTool>
+          <linkerAddLib>
+            <pElem>/usr/include/gdal</pElem>
+          </linkerAddLib>
+          <commandLine>-lgdal</commandLine>
+        </linkerTool>
       </compileType>
       <item path="lib/clipper/Documentation/clipper.chm"
             ex="false"
@@ -275,25 +288,25 @@
       </item>
       <item path="lib/sweep/sweep_context.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="src/Coords.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/coords.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="src/Coords.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="src/Funnel.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/Funnel.h" ex="false" tool="3" flavor2="0">
+      <item path="src/coords.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/defs.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="src/geomfunc.h" ex="false" tool="3" flavor2="0">
+      <item path="src/funnel.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="src/lcpc.cpp" ex="false" tool="1" flavor2="0">
+      <item path="src/funnel.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/geomfunc.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/lcpfinder.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/lcpfinder.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="src/minHeap.h" ex="false" tool="3" flavor2="0">
+      <item path="src/main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/min_heap.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/sorted_vector.h" ex="false" tool="3" flavor2="0">
       </item>

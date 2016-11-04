@@ -1,4 +1,9 @@
+Depencies:
+-gdal
+
+
 Installation instructions:
+
 In order to use the QGIS runner script the executable needs to be placed in directory on your search path. For example if executable is located at ~/bin run following comand to add ~/bin to your search path:
 
 export PATH="/home/$USER/bin:$PATH"

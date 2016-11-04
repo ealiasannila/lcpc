@@ -25,8 +25,4 @@ import inspect
 
 progress.setInfo("See console for progress and additional information. Cancel button won't actually cancel execution of algorithm.")
 
-filename = inspect.getframeinfo(inspect.currentframe()).filename
-path = os.path.dirname(os.path.abspath(filename))
-
-
-call([path+"/lcpc", cost_surface, target_points,start_point, friction_field, "-o", output_path, "-p", output_points, "-d", str(max_distance), "--driver", output_driver, "-a", algorithm, "--overwrite"])
+call(["least_cost_path", cost_surface, target_points,start_point, friction_field, "-o", output_path, "-p", output_points, "-d", str(max_distance), "--driver", output_driver, "-a", algorithm, "--overwrite"])

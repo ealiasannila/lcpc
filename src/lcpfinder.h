@@ -8,9 +8,9 @@
 #ifndef SRC_LCPFINDER_H_
 #define SRC_LCPFINDER_H_
 
-#include "Coords.h"
-#include "Funnel.h"
-#include "minHeap.h"
+#include "coords.h"
+#include "funnel.h"
+#include "min_heap.h"
 #include "geomfunc.h"
 #include "../lib/poly2tri.h"
 #include <tr1/unordered_set>

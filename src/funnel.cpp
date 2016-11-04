@@ -5,7 +5,7 @@
  *      Author: elias
  */
 
-#include "Funnel.h"
+#include "funnel.h"
 #include <sstream>
 
 

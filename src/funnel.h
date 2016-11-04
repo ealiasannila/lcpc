@@ -8,7 +8,7 @@
 #define FUNNEL_H_
 
 #include <deque>
-#include "Coords.h"
+#include "coords.h"
 #include <string>
 
 
