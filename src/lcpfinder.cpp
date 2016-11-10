@@ -11,7 +11,6 @@
 #include <iomanip>
 #include <iostream>
 
-
 /*
  * Finds opposing by looking up intersection of the immidiate neighbours of either end of the base.
  * This can be either 1 or 2 vertices, of whcih 1 or 0 may be relevant. (irrelevant vertice is already inside funnel)
@@ -22,8 +21,6 @@
 
 const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polygon) {
     nContainer intrsct;
-
-
     intrsct = intersection(l->getLeftNeighbours(polygon), r->getNeighbours(polygon));
     for (nContainer::iterator it = intrsct.begin(); it != intrsct.end(); it++) {
         if (*it != 0 and (*it)->isRight(l, r) == -1) {
@@ -39,17 +36,19 @@ std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*neighb
     if (ln->empty()) {
         this->triangulate(polygon);
     }
-
     nContainer* rn = c->getRightNeighbours(polygon);
-
-
     std::deque<Funnel> funnelQue{};
     nContainer::iterator rit = rn->begin();
     for (nContainer::iterator lit = ln->begin(); lit != ln->end(); lit++) {
         Funnel f(*lit, c, *rit);
-
-        neighbours->insert(std::pair<const Coords*, int>(*lit, polygon));
-        neighbours->insert(std::pair<const Coords*, int>(*rit, polygon));
+        auto p = neighbours->insert(std::pair<const Coords*, double>(*lit, this->frictions[polygon]));
+        if (!p.second and p.first->second >this->frictions[polygon]) {
+            p.first->second = this->frictions[polygon];
+        }
+        p = neighbours->insert(std::pair<const Coords*, double>(*rit, this->frictions[polygon]));
+        if (!p.second and p.first->second >this->frictions[polygon]) {
+            p.first->second = this->frictions[polygon];
+        }
         funnelQue.push_back(f);
         rit++;
     }
@@ -68,7 +67,7 @@ void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neig
         o = getOpposing(base.first, base.second, polygon);
         if (o != 0) {
             std::clock_t rb = std::clock();
-            f.reactToOpposite(o, &funnelQue, neighbours, polygon);
+            f.reactToOpposite(o, &funnelQue, neighbours, this->frictions[polygon]);
             funnelQue.push_back(f);
         }
 
@@ -97,28 +96,33 @@ double LcpFinder::toClosestEnd(const Coords* c) {
     return min * this->minFriction;
 }
 
- struct cmpr {
-        bool (*f)(const Coords* , const Coords* );
+struct cmpr {
+    bool (*f)(const Coords*, const Coords*);
 
-        cmpr(){
-            f = &compAstar;
-        }
-        
-        cmpr(bool (*comparefunction)(const Coords* , const Coords* )) {
-            f = comparefunction;
-        }
+    cmpr() {
+        f = &compAstar;
+    }
 
-        bool operator()(const Coords* x, const Coords* y) const {
-            return f(x, y);
-        }
-    };
+    cmpr(bool (*comparefunction)(const Coords*, const Coords*)) {
+        f = comparefunction;
+    }
+
+    bool operator()(const Coords* x, const Coords* y) const {
+        return f(x, y);
+    }
+};
 
 std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
+    if (this->startPoint2 == 0) {
+        std::cout << "No startpoint set in finder. Is the startpoint inside any polygon?\n" << std::endl;
+        exit(1);
+    }
+
     int targetsFound = 0;
     this->startPoint2->setToStart(0);
 
-    bool (*compareFunction)(const Coords* , const Coords* );
-    
+    bool (*compareFunction)(const Coords*, const Coords*);
+
 
     if (algorithm == 0) {
         compareFunction = &compDijkstra;
@@ -147,19 +151,27 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
         }
         handled++;
         const Coords* node = minheap.top();
+        if (node == 0) {
+            std::cout << "current node = 0\n";
+            exit(2);
+        }
         if (node->target) {
             targetsFound++;
             if (targetsFound == this->numOfTargets) {
                 break;
             }
         }
-        
-        
+
+
         minheap.pop();
-        nSet neighbours = findNeighbours(node); 
+        nSet neighbours = findNeighbours(node);
         for (std::pair<const Coords*, int> p : neighbours) {
             const Coords* n = p.first;
-            double d{node->getToStart() + eucDistance(node, n) * this->frictions[p.second]};
+            if (n == 0) {
+                std::cout << "neighbour is 0\n";
+                exit(2);
+            }
+            double d{node->getToStart() + eucDistance(node, n) * p.second};
             if (n->getToStart() < 0) { // node has not yet been inserted into minheap
                 n->setToStart(d);
                 n->setToEnd(this->toClosestEnd(n));
@@ -172,10 +184,14 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
             }
         }
     }
-
+    std::cout << "actual searching finished\n";
     std::deque<const Coords*> res;
     for (std::pair<int, std::vector < p2t::Point*>> endpoints : this->targetPoints) {
         for (p2t::Point* ep : endpoints.second) {
+            if (ep == 0) {
+                std::cout << "EP == 0\n";
+                continue;
+            }
             if (ep->x == this->startPoint2->getX() and ep->y == this->startPoint2->getY()) {
                 continue;
             }
@@ -189,7 +205,6 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
 }
 
 void LcpFinder::triangulate(int polygon) {
-
     std::vector<std::vector < p2t::Point*>> points;
     try {
         points = this->polygons.at(polygon);
@@ -287,6 +302,7 @@ void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double 
 }
 
 void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
+
     if (this->targetPoints.find(polygon) == this->targetPoints.end()) {
         this->targetPoints[polygon] = std::vector<p2t::Point*>{steinerpoint};
     } else {
@@ -294,9 +310,8 @@ void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
     }
     std::pair < std::tr1::unordered_set<Coords>::iterator, bool> success = this->coordmap.insert(Coords(steinerpoint->x, steinerpoint->y, polygon, true));
     if (!success.second) {
-        std::cout << "DID NOT INSERT\n";
+        std::cout << "DID NOT INSERT steinerpoint: " << steinerpoint->x << "," << steinerpoint->y << "into polygon " << polygon << "\n";
         std::cout << success.first->toString() << std::endl;
-        std::cout << Coords(steinerpoint->x, steinerpoint->y, polygon, true).toString() << std::endl;
     } else {
         this->numOfTargets++;
     }
@@ -304,6 +319,7 @@ void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
 
 void LcpFinder::addStartPoint(p2t::Point* startPoint, int polygon) {
     this->addSteinerPoint(startPoint, polygon);
+    
     this->startPoint2 = & * this->coordmap.find(Coords(startPoint->x, startPoint->y));
 
 }

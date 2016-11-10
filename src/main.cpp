@@ -18,32 +18,88 @@
 #include <string.h>
 #include<iostream>
 
-void savePolygon(std::vector<std::vector<p2t::Point*>> p2tp, int i) {
-    std::cout << "savePolygon\n";
+bool fileExists(const std::string& name) {
+    if (FILE * file = fopen(name.c_str(), "r")) {
+        fclose(file);
+        return true;
+    } else {
 
-    std::cout << p2tp[0].size() << std::endl;
-    std::cout << i << std::endl;
+        return false;
+    }
+}
+void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f) {
+    const Coords* closest = 0;
+    const Coords* c;
+    for (auto it = finder->getCoordmap()->begin(); it != finder->getCoordmap()->end(); it++) {
+        c = &*it;
+        if (closest == 0 or eucDistance(c, &f) < eucDistance(closest, &f)) {
+            closest = c;
+        }
+    }
 
+    nSet n = finder->findNeighbours(closest);
+    OGRSFDriver *driver;
+    OGRRegisterAll();
+    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+    OGRDataSource *pointDS;
+    if (fileExists(outfile)) {
+        driver->DeleteDataSource((outfile).c_str());
+    }
+    pointDS = driver->CreateDataSource(outfile.c_str(), NULL);
+    if (pointDS == NULL) {
+        printf("Creation of output file failed.\n");
+        exit(1);
+    }
+    OGRLayer *layer;
+    OGRSpatialReference sr;
+    sr.importFromEPSG(3047);
+    layer = pointDS->CreateLayer("polygon", &sr, wkbLineString, NULL);
+    if (layer == NULL) {
+        printf("Point layer creation failed.\n");
+        exit(1);
+    }
+
+    OGRFieldDefn pField("polygon", OFTInteger);
+
+
+    if (layer->CreateField(&pField) != OGRERR_NONE) {
+        printf("Creating polygon field failed.\n");
+        exit(1);
+    }
+    for (std::pair<const Coords*, int> p : n) {
+        OGRFeature *feature;
+        feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
+        OGRLineString line{};
+        line.addPoint(closest->getX(), closest->getY());
+        line.addPoint(p.first->getX(), p.first->getY());
+        feature->SetField("polygon", p.second);
+        feature->SetGeometry(&line);
+        if (layer->CreateFeature(feature) != OGRERR_NONE) {
+            printf("Failed to create feature in shapefile.\n");
+            exit(1);
+        }
+        OGRFeature::DestroyFeature(feature);
+    }
+    OGRDataSource::DestroyDataSource(pointDS);
+    std::cout << "done saving\n";
+}
+
+void savePolygons(LcpFinder* finder, std::string outputpolygon) {
     OGRSFDriver *driver;
     OGRRegisterAll();
     driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
     OGRDataSource *pointDS;
 
-    std::string outputpolygon = "outpolygon" + std::to_string(i) + ".shp";
 
     std::cout << outputpolygon << std::endl;
-
     pointDS = driver->CreateDataSource(outputpolygon.c_str(), NULL);
-
-
     if (pointDS == NULL) {
         printf("Creation of output file failed.\n");
         exit(1);
     }
     OGRLayer *pointLayer;
     OGRSpatialReference sr;
-    sr.importFromEPSG(3067);
-
+    sr.importFromEPSG(3047);
     pointLayer = pointDS->CreateLayer("polygon", &sr, wkbPolygon, NULL);
 
     if (pointLayer == NULL) {
@@ -51,29 +107,46 @@ void savePolygon(std::vector<std::vector<p2t::Point*>> p2tp, int i) {
         exit(1);
     }
 
-    OGRFeature *poFeature;
-    poFeature = OGRFeature::CreateFeature(pointLayer->GetLayerDefn());
 
-    OGRPolygon poly;
+    for (int i = 0; i < finder->getPolygonCount(); i++) {
+        std::vector<std::vector < p2t::Point*>> p2tp = finder->getPolygon(i);
 
-    for (std::vector<p2t::Point*> ring : p2tp) {
-        OGRLinearRing lr;
+        OGRFeature *poFeature;
+        poFeature = OGRFeature::CreateFeature(pointLayer->GetLayerDefn());
 
-        for (p2t::Point* pt : ring) {
-            lr.addPoint(pt->x, pt->y);
+        OGRPolygon poly;
+
+        bool ext = true;
+        for (std::vector<p2t::Point*> ring : p2tp) {
+            OGRLinearRing lr;
+
+            for (p2t::Point* pt : ring) {
+                if (pt == 0) {
+                    std::cout << "pt ==0\n";
+                    exit(1);
+                }
+
+                lr.addPoint(pt->x, pt->y);
+            }
+            lr.addPoint(ring[0]->x, ring[0]->y);
+            if (!lr.isClockwise() and ext) {
+                std::cout << "reversing\n";
+                lr.reverseWindingOrder();
+
+            }
+            ext = false;
+
+            poly.addRing(&lr);
         }
-        poly.addRing(&lr);
+
+
+        poFeature->SetGeometry(&poly);
+        if (pointLayer->CreateFeature(poFeature) != OGRERR_NONE) {
+            printf("Failed to create feature in shapefile.\n");
+            exit(1);
+        }
+        OGRFeature::DestroyFeature(poFeature);
     }
-
-
-    poFeature->SetGeometry(&poly);
-    if (pointLayer->CreateFeature(poFeature) != OGRERR_NONE) {
-        printf("Failed to create feature in shapefile.\n");
-        exit(1);
-    }
-    std::cout << "hello2\n";
-    OGRFeature::DestroyFeature(poFeature);
-
     OGRDataSource::DestroyDataSource(pointDS);
     std::cout << "done saving\n";
 }
@@ -197,37 +270,43 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
     int pIdx = 0;
     OGRFeature * csFtre;
     while ((csFtre = csLr->GetNextFeature()) != NULL) {
+        
         OGRGeometry* csGeometry = csFtre->GetGeometryRef();
         if (csGeometry != NULL
                 && wkbFlatten(csGeometry->getGeometryType()) == wkbPolygon) {
             OGRPolygon *csPolygon = (OGRPolygon *) csGeometry;
 
             OGRLinearRing* extRing = csPolygon->getExteriorRing();
+            
             if (extRing->isClockwise()) {
                 extRing->reverseWindingOrder();
             }
 
             for (unsigned int ri = 0; ri < csPolygon->getNumInteriorRings(); ri++) {
                 OGRLinearRing* intRing = csPolygon->getInteriorRing(ri);
+                
                 if (intRing->isClockwise()) {
                     intRing->reverseWindingOrder();
                 }
             }
 
-            std::vector<std::vector<std::vector<p2t::Point*> > > sPolygons = simplify(csPolygon);
-
+            std::vector<std::vector<std::vector<p2t::Point*> > > sPolygons = dumbSimplify(csPolygon);
+            
             for (std::vector<std::vector<p2t::Point*> > polygon : sPolygons) {
+                //std::cout<<"POLYGON: "<<pIdx<<"size: "<<polygon[0].size()<<std::endl;
                 if (maxd > 0) {
                     intermidiatePoints(&polygon, maxd);
                 }
                 finder->addPolygon(polygon, csFtre->GetFieldAsDouble(frictionField));
 
                 if (inside(polygon, startp2t)) {
+                    
                     finder->addStartPoint(startp2t, pIdx);
                 }
                 for (int i = 0; i < targetOGRPoints.size(); i++) {
                     p2t::Point* targetp2t = new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY());
                     if (inside(polygon, targetp2t)) {
+                        
                         finder->addSteinerPoint(targetp2t, pIdx);
                     } else {
                         delete targetp2t;
@@ -261,15 +340,7 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
 
 }
 
-bool fileExists(const std::string& name) {
-    if (FILE * file = fopen(name.c_str(), "r")) {
-        fclose(file);
-        return true;
-    } else {
 
-        return false;
-    }
-}
 
 bool testDriver(OGRSFDriver* driver) {
     if (driver == NULL) {
@@ -523,6 +594,10 @@ std::string getArgVal(std::string argSwitch, char* argv[], int argc) {
     }
 }
 
+void printFinder(LcpFinder* finder) {
+    std::cout << finder->getCoordmap()->size() << std::endl;
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
         std::cout << "This program is used to search for least cost paths in polygonal costsurface for more information see: URL.\n";
@@ -568,7 +643,7 @@ int main(int argc, char* argv[]) {
 
 
     bool overwrite = argExists("--overwrite", argv, argc);
-
+    std::cout << "USING DUMB SIMPLIFY\n";
     std::string distance = "0";
     if (argExists("-d", argv, argc)) {
         distance = getArgVal("-d", argv, argc);
@@ -582,6 +657,11 @@ int main(int argc, char* argv[]) {
 
     readCostSurface(argv[1], argv[2], argv[3], &finder, argv[4], distance, &sr);
     double secs = double(std::clock() - begin) / CLOCKS_PER_SEC;
+    if (argExists("--scs", argv, argc)) {
+        std::string outcs = getArgVal("--scs", argv, argc);
+        std::cout << "Saving modified costsurface\n";
+        savePolygons(&finder, outcs);
+    }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     begin = std::clock();
     std::deque<const Coords*> results = finder.leastCostPath(alg);

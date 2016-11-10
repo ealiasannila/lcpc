@@ -24,8 +24,6 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" testarea.shp targets.shp start.shp friction output 500</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500 "ESRI Shapefile"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 output 500 "ESRI Shapefile" astar</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" looper.shp looper_targets.shp looper_start.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
@@ -34,8 +32,10 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" complex.shp ltargets.shp lstart.shp Luokka3 path points 50 "ESRI Shapefile" astar</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" complex.shp ltargets.shp lstart.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 -o path -p points -d 500 --driver "ESRI Shapefile" -a astar</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds4/cs.shp /home/elias/Documents/lcp_test_data/ds4/targets.shp /home/elias/Documents/lcp_test_data/ds4/start.shp friction -p /home/elias/Documents/lcp_test_data/ds4/visi_path.shp --overwrite</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 -o path -p points -d 500 --driver "ESRI Shapefile" -a astar</runcommand>
+        <runcommand>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds4/cs.shp /home/elias/Documents/lcp_test_data/ds4/targets.shp /home/elias/Documents/lcp_test_data/ds4/start.shp friction -p /home/elias/Documents/lcp_test_data/ds4/visi_path.shp --overwrite</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <console-type>2</console-type>
@@ -46,6 +46,48 @@
       </runprofile>
     </conf>
     <conf name="Release" type="1">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <platform>2</platform>
+      </toolsSet>
+      <dbx_gdbdebugger version="1">
+        <gdb_pathmaps>
+        </gdb_pathmaps>
+        <gdb_interceptlist>
+          <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
+        </gdb_interceptlist>
+        <gdb_options>
+          <DebugOptions>
+          </DebugOptions>
+        </gdb_options>
+        <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
+      </dbx_gdbdebugger>
+      <nativedebugger version="1">
+        <engine>gdb</engine>
+      </nativedebugger>
+      <runprofile version="9">
+        <runcommandpicklist>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"/least_cost_path /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/least_cost_path/trouble.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp --scs</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp --scs</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/least_cost_path/trouble.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/least_cost_path/trouble.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -o /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -o /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  ../lcp_test_data/trouble.shp ../lcp_test_data/ttarget.shp ../lcp_test_data/tstart.shp friction -o ../lcp_test_data/t_path.shp -p ../lcp_test_data/t_points.shp -a dijkstra --overwrite</runcommandpicklistitem>
+        </runcommandpicklist>
+        <runcommand>"${OUTPUT_PATH}"  ../lcp_test_data/trouble.shp ../lcp_test_data/ttarget.shp ../lcp_test_data/tstart.shp friction -o ../lcp_test_data/t_path.shp -p ../lcp_test_data/t_points.shp -a dijkstra --overwrite</runcommand>
+        <rundir></rundir>
+        <buildfirst>true</buildfirst>
+        <console-type>2</console-type>
+        <terminal-type>0</terminal-type>
+        <remove-instrumentation>0</remove-instrumentation>
+        <environment>
+        </environment>
+      </runprofile>
+    </conf>
+    <conf name="NewConfiguration" type="1">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
         <platform>2</platform>

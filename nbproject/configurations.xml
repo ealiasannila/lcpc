@@ -88,14 +88,16 @@
         <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
+        <cTool>
+          <commandLine>-g -O0</commandLine>
+        </cTool>
         <ccTool>
-          <developmentMode>6</developmentMode>
           <standard>11</standard>
           <commandlineTool>g++</commandlineTool>
           <incDir>
             <pElem>/usr/include/gdal</pElem>
           </incDir>
-          <commandLine>-std=c++11</commandLine>
+          <warningLevel>2</warningLevel>
         </ccTool>
         <linkerTool>
           <linkerAddLib>
@@ -205,11 +207,12 @@
           </incDir>
         </cTool>
         <ccTool>
-          <developmentMode>5</developmentMode>
+          <developmentMode>6</developmentMode>
           <standard>11</standard>
           <incDir>
             <pElem>/usr/include/gdal</pElem>
           </incDir>
+          <commandLine>-l gdal</commandLine>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -223,6 +226,101 @@
           </linkerAddLib>
           <commandLine>-lgdal</commandLine>
         </linkerTool>
+      </compileType>
+      <item path="lib/clipper/Documentation/clipper.chm"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/default.css"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/offset_triginometry.svg"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/offset_triginometry2.svg"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/Documentation/offset_triginometry3.svg"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/clipper/License.txt" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/CMakeLists.txt" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/clipper.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/clipper.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/clipper/cpp/polyclipping.pc.cmakein"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="lib/common/shapes.cc" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="lib/common/shapes.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/common/utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/poly2tri.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/sweep/advancing_front.cc" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="lib/sweep/advancing_front.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/sweep/cdt.cc" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="lib/sweep/cdt.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/sweep/sweep.cc" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="lib/sweep/sweep.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="lib/sweep/sweep_context.cc" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="lib/sweep/sweep_context.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/coords.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/coords.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/defs.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/funnel.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/funnel.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/geomfunc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/lcpfinder.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/lcpfinder.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/min_heap.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/sorted_vector.h" ex="false" tool="3" flavor2="0">
+      </item>
+    </conf>
+    <conf name="NewConfiguration" type="1">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <compileType>
       </compileType>
       <item path="lib/clipper/Documentation/clipper.chm"
             ex="false"

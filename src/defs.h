@@ -15,5 +15,5 @@
 class Coords;
 typedef std::vector<const Coords*> nContainer;
 typedef std::tr1::unordered_map<int, nContainer> allNContainer;
-typedef std::map<const Coords*, int> nSet; //used in dijsktra/A* must not allow duplicates.
+typedef std::map<const Coords*, double> nSet; //used in dijsktra/A* must not allow duplicates.
 #endif /* SRC_DEFS_H_ */

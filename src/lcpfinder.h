@@ -40,15 +40,21 @@ private:
     const Coords* getOpposing(const Coords* l, const Coords* r, int polygon);
     std::deque<Funnel> initFQue(const Coords* c, int polygon, nSet*neighbours);
     void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours);
-    nSet findNeighbours(const Coords* c);
     double toClosestEnd(const Coords* c);
-    
+
 public:
+    nSet findNeighbours(const Coords* c);
 
+    std::vector<std::vector<p2t::Point*>> getPolygon(int i) {
+        return this->polygons[i];
+    };
 
-    
-    std::tr1::unordered_set<Coords, CoordsHasher> getCoordmap() {
-        return coordmap;
+    int getPolygonCount() {
+        return this->polygons.size();
+    };
+
+    std::tr1::unordered_set<Coords, CoordsHasher>* getCoordmap() {
+        return &coordmap;
     }
     std::deque<const Coords*> leastCostPath(int algorithm);
     void addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction);

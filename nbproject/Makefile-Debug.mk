@@ -48,11 +48,11 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=
+CFLAGS=-g -O0
 
 # CC Compiler Flags
-CCFLAGS=-std=c++11
-CXXFLAGS=-std=c++11
+CCFLAGS=
+CXXFLAGS=
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -74,52 +74,52 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/least_cost_path: ${OBJECTFILES}
 ${OBJECTDIR}/lib/clipper/cpp/clipper.o: lib/clipper/cpp/clipper.cpp 
 	${MKDIR} -p ${OBJECTDIR}/lib/clipper/cpp
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/clipper/cpp/clipper.o lib/clipper/cpp/clipper.cpp
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/clipper/cpp/clipper.o lib/clipper/cpp/clipper.cpp
 
 ${OBJECTDIR}/lib/common/shapes.o: lib/common/shapes.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/common
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/common/shapes.o lib/common/shapes.cc
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/common/shapes.o lib/common/shapes.cc
 
 ${OBJECTDIR}/lib/sweep/advancing_front.o: lib/sweep/advancing_front.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/advancing_front.o lib/sweep/advancing_front.cc
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/advancing_front.o lib/sweep/advancing_front.cc
 
 ${OBJECTDIR}/lib/sweep/cdt.o: lib/sweep/cdt.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/cdt.o lib/sweep/cdt.cc
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/cdt.o lib/sweep/cdt.cc
 
 ${OBJECTDIR}/lib/sweep/sweep.o: lib/sweep/sweep.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep.o lib/sweep/sweep.cc
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep.o lib/sweep/sweep.cc
 
 ${OBJECTDIR}/lib/sweep/sweep_context.o: lib/sweep/sweep_context.cc 
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep_context.o lib/sweep/sweep_context.cc
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep_context.o lib/sweep/sweep_context.cc
 
 ${OBJECTDIR}/src/coords.o: src/coords.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/coords.o src/coords.cpp
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/coords.o src/coords.cpp
 
 ${OBJECTDIR}/src/funnel.o: src/funnel.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/funnel.o src/funnel.cpp
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/funnel.o src/funnel.cpp
 
 ${OBJECTDIR}/src/lcpfinder.o: src/lcpfinder.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/lcpfinder.o src/lcpfinder.cpp
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/lcpfinder.o src/lcpfinder.cpp
 
 ${OBJECTDIR}/src/main.o: src/main.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/main.o src/main.cpp
+	$(COMPILE.cc) -g -Wall -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/main.o src/main.cpp
 
 # Subprojects
 .build-subprojects:

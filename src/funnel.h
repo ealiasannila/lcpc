@@ -25,7 +25,7 @@ public:
 	Funnel(std::vector<const Coords*> lc, std::vector<const Coords*> rc);
 	std::pair<const Coords*, const Coords*> getBase();
 	Funnel split(const Coords* o);
-	void reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, nSet* neighbours, int polygon);
+	void reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, nSet* neighbours, double friction);
 	std::vector<const Coords*> getLC();
 	std::vector<const Coords*> getRC();
 	std::string toString();

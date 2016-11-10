@@ -22,6 +22,14 @@ CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/least_cost_path
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux/package
 CND_PACKAGE_NAME_Release=leastcostpath.tar
 CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/leastcostpath.tar
+# NewConfiguration configuration
+CND_PLATFORM_NewConfiguration=GNU-Linux
+CND_ARTIFACT_DIR_NewConfiguration=dist/NewConfiguration/GNU-Linux
+CND_ARTIFACT_NAME_NewConfiguration=least_cost_path
+CND_ARTIFACT_PATH_NewConfiguration=dist/NewConfiguration/GNU-Linux/least_cost_path
+CND_PACKAGE_DIR_NewConfiguration=dist/NewConfiguration/GNU-Linux/package
+CND_PACKAGE_NAME_NewConfiguration=leastcostpath.tar
+CND_PACKAGE_PATH_NewConfiguration=dist/NewConfiguration/GNU-Linux/package/leastcostpath.tar
 #
 # include compiler specific variables
 #

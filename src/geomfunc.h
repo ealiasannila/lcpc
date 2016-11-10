@@ -9,32 +9,30 @@
 
 #include <gdal/ogrsf_frmts.h>
 #include "coords.h"
-
+#include <iostream>
 #ifndef SRC_GEOMFUNC_H_
 #define SRC_GEOMFUNC_H_
 
 double inline eucDistance(const Coords* p1, const Coords* p2) {
-	return std::sqrt(std::pow(p1->getX() - p2->getX(), 2) + std::pow(p1->getY() - p2->getY(), 2));
+    return std::sqrt(std::pow(p1->getX() - p2->getX(), 2) + std::pow(p1->getY() - p2->getY(), 2));
 }
 
 double inline eucDistance(p2t::Point* p1, p2t::Point* p2) {
-	return std::sqrt(std::pow(p1->x - p2->x, 2) + std::pow(p1->y - p2->y, 2));
+    return std::sqrt(std::pow(p1->x - p2->x, 2) + std::pow(p1->y - p2->y, 2));
 }
-
 
 double inline eucDistance(p2t::Point* p1, const Coords* p2) {
-	return std::sqrt(std::pow(p1->x - p2->getX(), 2) + std::pow(p1->y - p2->getY(), 2));
+    return std::sqrt(std::pow(p1->x - p2->getX(), 2) + std::pow(p1->y - p2->getY(), 2));
 }
 
-
-nContainer inline intersection(nContainer* ln, SortedVector<const Coords*>* rn){
+nContainer inline intersection(nContainer* ln, std::set<const Coords*>* rn) {
     nContainer res;
-    for(auto li = ln->begin(); li != ln->end(); li++){
-        for (auto ri = rn->begin(); ri != rn->end(); ri++){
-            if(*ri>*li){
+    for (auto li = ln->begin(); li != ln->end(); li++) {
+        for (auto ri = rn->begin(); ri != rn->end(); ri++) {
+            if (*ri>*li) {
                 break;
             }
-            if(*ri==*li){
+            if (*ri == *li) {
                 res.push_back(*ri);
             }
         }
@@ -43,30 +41,30 @@ nContainer inline intersection(nContainer* ln, SortedVector<const Coords*>* rn){
 }
 
 int inline addIntermidiatePoints(std::vector<p2t::Point*>* vec, std::vector<p2t::Point*>::iterator pit, std::vector<p2t::Point*>::iterator nextit, double maxDist) {
-	p2t::Point* p = *pit;
-	p2t::Point* next = *nextit;
-	int pointsToAdd = std::ceil(eucDistance(p, next) / maxDist) - 1;
-	std::vector<p2t::Point*> res(pointsToAdd);
+    p2t::Point* p = *pit;
+    p2t::Point* next = *nextit;
+    int pointsToAdd = std::ceil(eucDistance(p, next) / maxDist) - 1;
+    std::vector<p2t::Point*> res(pointsToAdd);
 
-	for (int i = 0; i < pointsToAdd; i++) {
-		double x { ((next->x - p->x) / (pointsToAdd + 1)) * (i + 1) + p->x };
-		double y { ((next->y - p->y) / (pointsToAdd + 1)) * (i + 1) + p->y };
-		res[i] = new p2t::Point(x, y);
-	}
-	vec->insert(pit + 1, res.begin(), res.end());
-	return pointsToAdd;
+    for (int i = 0; i < pointsToAdd; i++) {
+        double x{((next->x - p->x) / (pointsToAdd + 1)) * (i + 1) + p->x};
+        double y{((next->y - p->y) / (pointsToAdd + 1)) * (i + 1) + p->y};
+        res[i] = new p2t::Point(x, y);
+    }
+    vec->insert(pit + 1, res.begin(), res.end());
+    return pointsToAdd;
 }
 
-void  inline intermidiatePoints(std::vector<std::vector<p2t::Point*>>* points, double maxDist) {
-	for (unsigned int ring = 0; ring < points->size(); ring++) {
-		for (unsigned int point = 0; point < points->at(ring).size(); point++) {
-			// add intermidiate points if next point is too far.
-			std::vector<p2t::Point*>::iterator next = (point + 1 != points->at(ring).size()) ? points->at(ring).begin() + point + 1 : points->at(ring).begin();
-			if (eucDistance(points->at(ring).at(point), *next) + 0.0000001 > maxDist) {
-				addIntermidiatePoints(&points->at(ring), points->at(ring).begin() + point, next, maxDist);
-			}
-		}
-	}
+void inline intermidiatePoints(std::vector<std::vector<p2t::Point*>>*points, double maxDist) {
+    for (unsigned int ring = 0; ring < points->size(); ring++) {
+        for (unsigned int point = 0; point < points->at(ring).size(); point++) {
+            // add intermidiate points if next point is too far.
+            std::vector<p2t::Point*>::iterator next = (point + 1 != points->at(ring).size()) ? points->at(ring).begin() + point + 1 : points->at(ring).begin();
+            if (eucDistance(points->at(ring).at(point), *next) + 0.0000001 > maxDist) {
+                addIntermidiatePoints(&points->at(ring), points->at(ring).begin() + point, next, maxDist);
+            }
+        }
+    }
 }
 
 bool inline compDijkstra(const Coords* x, const Coords* y) {
@@ -102,6 +100,18 @@ bool inline inside(std::vector<std::vector<p2t::Point*>> polygon, p2t::Point* po
     return true;
 }
 
+int inline Orient(p2t::Point& pa, p2t::Point& pb, p2t::Point& pc) {
+    double detleft = (pa.x - pc.x) * (pb.y - pc.y);
+    double detright = (pa.y - pc.y) * (pb.x - pc.x);
+    double val = detleft - detright;
+    if (val > -0.000001 && val < 0.000001) {
+        return 0;
+    } else if (val > 0) {
+        return -1;
+    }
+    return 1;
+}
+
 std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon * polygon) {
     int scale = 10000;
     ClipperLib::Paths paths;
@@ -125,6 +135,7 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
 
 
     ClipperLib::SimplifyPolygons(paths, ClipperLib::pftEvenOdd);
+    std::map<std::pair<int, int>, int> points;
 
     std::vector<unsigned int> holes;
     std::vector<unsigned int> outers;
@@ -133,6 +144,9 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
         if (ClipperLib::Orientation(path)) {
             std::vector < p2t::Point*> outer;
             for (ClipperLib::IntPoint ip : path) {
+                if (!points.insert(std::make_pair(std::make_pair(ip.X, ip.Y), 0)).second) {
+                    std::cout << "DOUBLE POINT ON OUTER\n";
+                }
                 outer.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
             }
             out.push_back(std::vector<std::vector < p2t::Point*>>
@@ -146,10 +160,47 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
 
     for (unsigned int hole : holes) {
         std::vector < p2t::Point*> inner;
-
         for (unsigned int i = 0; i < paths[hole].size(); i++) {
             ClipperLib::IntPoint ip = paths[hole].at(paths[hole].size() - 1 - i);
-            inner.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
+            auto ins = points.insert(std::make_pair(std::make_pair(ip.X, ip.Y), hole));
+
+            p2t::Point* point = new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale};
+            if (!ins.second) {
+                std::cout << "DOUBLE POINT ON RING " << ins.first->second << "\n";
+                std::cout << "Current ring: " << hole << std::endl;
+                std::cout << "xy: " << point->x << "," << point->y << std::endl;
+                int j = 1;
+                int ori = 0;
+                p2t::Point next;
+                p2t::Point prev;
+                do {
+                    int pipInd = paths[hole].size() - 1 - i + j;
+
+                    int nipInd = paths[hole].size() - 1 - i - j;
+                    if (nipInd < 0) {
+                        nipInd = paths[hole].size() - nipInd;
+                    }
+                    if (pipInd > paths[hole].size() - 1) {
+                        pipInd = pipInd - paths[hole].size();
+                    }
+                    j++;
+                    ClipperLib::IntPoint nip = paths[hole].at(nipInd);
+                    ClipperLib::IntPoint pip = paths[hole].at(pipInd);
+                    next = p2t::Point{(double) nip.X / scale, (double) nip.Y / scale};
+                    prev = p2t::Point{(double) pip.X / scale, (double) pip.Y / scale};
+                    ori = Orient(prev, *point, next);
+                } while (ori == 0);
+
+
+                p2t::Point moved{(next.x - prev.x) / 2 + prev.x, (next.y - prev.y) / 2 + prev.y};
+                double e = eucDistance(point, &moved);
+                double dx = (moved.x - point->x) / e;
+                double dy = (moved.y - point->y) / e;
+
+                point->x -= dx*ori;
+                point->y -= dy*ori;
+            }
+            inner.push_back(point);
         }
         unsigned int outIndex = 0;
         for (std::vector<std::vector < p2t::Point*>> outer : out) {
@@ -162,6 +213,43 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
     return out;
 
 }
+
+std::vector<std::vector<std::vector < p2t::Point*>>> inline dumbSimplify(OGRPolygon * polygon) {
+    std::vector<std::vector<std::vector < p2t::Point*>>> out;
+    out.push_back(std::vector<std::vector < p2t::Point*>>
+    {
+    });
+    OGRLineString* ext = polygon->getExteriorRing();
+    out.back().push_back(std::vector<p2t::Point*>{});
+
+    for (int i = 0; i < ext->getNumPoints(); i++) {
+        int index = ext->getNumPoints() - 1 - i;
+        out.back().back().push_back(new p2t::Point{ext->getX(i), ext->getY(i)});
+    }
+    p2t::Point* d = out.back().back().back();
+    p2t::Point* s = out.back().back()[0];
+    if (s->x == d->x and s->y == d->y) {
+        out.back().back().pop_back();
+        delete d;
+    }
+
+    for (int i = 0; i < polygon->getNumInteriorRings(); i++) {
+        out.back().push_back(std::vector<p2t::Point*>{});
+        OGRLineString* inter = polygon->getInteriorRing(i);
+        for (int j = 0; j < inter->getNumPoints(); j++) {
+            out.back().back().push_back(new p2t::Point{inter->getX(j), inter->getY(j)});
+        }
+        p2t::Point* d = out.back().back().back();
+        p2t::Point* s = out.back().back()[0];
+        if (s->x == d->x and s->y == d->y) {
+            out.back().back().pop_back();
+            delete d;
+        }
+    }
+    return out;
+
+}
+
 
 
 #endif /* SRC_GEOMFUNC_H_ */

@@ -11,8 +11,9 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <math.h>
 #include <limits>
-
+#include <iomanip>
 
 Coords::Coords(double newx, double newy) {
     x = newx;
@@ -52,7 +53,7 @@ nContainer* Coords::getLeftNeighbours(int polygon) const {
         exit(1);
     }
 }
-SortedVector<const Coords*>* Coords::getNeighbours(int polygon) const {
+std::set<const Coords*>* Coords::getNeighbours(int polygon) const {
     try {
         return &this->neighbours[polygon];
     } catch (const std::out_of_range& oor) {
@@ -69,7 +70,7 @@ std::vector<int> Coords::belongsToPolygons() const {
 }
 
 void Coords::addToPolygon(int polygon) const {
-    this->neighbours.insert(std::pair<int, SortedVector<const Coords*>>(polygon, SortedVector<const Coords*>()));
+    this->neighbours.insert(std::pair<int, std::set<const Coords*>>(polygon, std::set<const Coords*>()));
     this->leftNeighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
     this->rightNeighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
 }
@@ -85,10 +86,10 @@ void Coords::addNeighbours(const Coords* l, const Coords* r, int polygon) const 
 }
 
 void Coords::setToStart(double cost) const {
-    toStart = cost;
+    this->toStart = cost;
 }
 void Coords::setToEnd(double cost) const {
-    toEnd = cost;
+    this->toEnd = cost;
 }
 
 void Coords::setPred(const Coords* pred) const {
@@ -97,7 +98,10 @@ void Coords::setPred(const Coords* pred) const {
 
 std::string Coords::toString() const {
     std::stringstream sstm;
-    
+    sstm<<std::setprecision(4);
+    sstm<<std::fixed;
+    sstm <<"xy: "<<this->x<<","<<this->y<<std::endl; 
+    sstm<<"polygons: ";
     for (std::pair<int, nContainer> p : this->leftNeighbours) {
         sstm << p.first << " ";
     }
@@ -106,13 +110,17 @@ std::string Coords::toString() const {
 
 int Coords::isRight(const Coords* c1, const Coords* c2) const {
     double d = (c2->getY() - c1->getY()) * (x - c2->getX()) - (c2->getX() - c1->getX()) * (y - c2->getY());
+    
+    if(fabs(d)<0.000001){
+        return 0;
+    }
     if (d < 0) {
         return -1;
     }
     if (d > 0) {
         return 1;
     }
-    return 0;
+    
 }
 
 
