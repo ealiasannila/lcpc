@@ -27,6 +27,7 @@ bool fileExists(const std::string& name) {
         return false;
     }
 }
+
 void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f) {
     const Coords* closest = 0;
     const Coords* c;
@@ -270,28 +271,28 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
     int pIdx = 0;
     OGRFeature * csFtre;
     while ((csFtre = csLr->GetNextFeature()) != NULL) {
-        
+
         OGRGeometry* csGeometry = csFtre->GetGeometryRef();
         if (csGeometry != NULL
                 && wkbFlatten(csGeometry->getGeometryType()) == wkbPolygon) {
             OGRPolygon *csPolygon = (OGRPolygon *) csGeometry;
 
             OGRLinearRing* extRing = csPolygon->getExteriorRing();
-            
+
             if (extRing->isClockwise()) {
                 extRing->reverseWindingOrder();
             }
 
             for (unsigned int ri = 0; ri < csPolygon->getNumInteriorRings(); ri++) {
                 OGRLinearRing* intRing = csPolygon->getInteriorRing(ri);
-                
+
                 if (intRing->isClockwise()) {
                     intRing->reverseWindingOrder();
                 }
             }
 
-            std::vector<std::vector<std::vector<p2t::Point*> > > sPolygons = dumbSimplify(csPolygon);
-            
+            std::vector<std::vector<std::vector<p2t::Point*> > > sPolygons = simplify(csPolygon);
+
             for (std::vector<std::vector<p2t::Point*> > polygon : sPolygons) {
                 //std::cout<<"POLYGON: "<<pIdx<<"size: "<<polygon[0].size()<<std::endl;
                 if (maxd > 0) {
@@ -300,13 +301,13 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
                 finder->addPolygon(polygon, csFtre->GetFieldAsDouble(frictionField));
 
                 if (inside(polygon, startp2t)) {
-                    
+
                     finder->addStartPoint(startp2t, pIdx);
                 }
                 for (int i = 0; i < targetOGRPoints.size(); i++) {
                     p2t::Point* targetp2t = new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY());
                     if (inside(polygon, targetp2t)) {
-                        
+
                         finder->addSteinerPoint(targetp2t, pIdx);
                     } else {
                         delete targetp2t;
@@ -317,7 +318,11 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
 
 
         } else {
-            printf("no polygon geometry\n");
+            std::cout << "no polygon geometry " << pIdx << "\n";
+            std::cout << csGeometry << std::endl;
+            if (csGeometry != 0) {
+                std::cout << csGeometry->getGeometryType() << std::endl;
+            }
         }
         OGRFeature::DestroyFeature(csFtre);
 
@@ -339,8 +344,6 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
 
 
 }
-
-
 
 bool testDriver(OGRSFDriver* driver) {
     if (driver == NULL) {
@@ -577,6 +580,80 @@ void writeOutput(std::deque<const Coords*> results, std::string outputfile, std:
 
 }
 
+void writeOutputInvidual(std::deque<const Coords*> results, std::string outputfile, std::string pszDriverName, OGRSpatialReference sr, bool overwrite) {
+
+    OGRSFDriver *driver;
+    OGRRegisterAll();
+    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName.c_str());
+    if (!overwrite) {
+        if (!testDriver(driver)) {
+            driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+        }
+    }
+    OGRDataSource *pathDS;
+    if (!overwrite) {
+        outputfile = validateOutfile(driver, outputfile);
+
+    } else if (fileExists(outputfile)) {
+        driver->DeleteDataSource((outputfile).c_str());
+    }
+    pathDS = driver->CreateDataSource((outputfile).c_str(), NULL);
+    if (pathDS == NULL) {
+        printf("Creation of output file failed.\n");
+        exit(1);
+    }
+
+
+    OGRLayer *pathLayer;
+    pathLayer = pathDS->CreateLayer("least_cost_path", &sr, wkbLineString, NULL);
+    if (pathLayer == NULL) {
+        printf("Path layer creation failed.\n");
+        exit(1);
+    }
+
+    OGRFieldDefn cField("cost", OFTReal);
+    cField.SetPrecision(2);
+
+    OGRFieldDefn idField("path_id", OFTInteger);
+
+
+    if (pathLayer->CreateField(&cField) != OGRERR_NONE) {
+        printf("Creating Cost field failed.\n");
+        exit(1);
+    }
+    if (pathLayer->CreateField(&idField) != OGRERR_NONE) {
+        printf("Creating Cost field failed.\n");
+        exit(1);
+    }
+
+    int i = 1;
+    for (const Coords* point : results) {
+        OGRFeature *poFeature;
+
+        poFeature = OGRFeature::CreateFeature(pathLayer->GetLayerDefn());
+        poFeature->SetField("cost", point->getToStart());
+        poFeature->SetField("path_id", i);
+        i++;
+       
+        OGRLineString ogrls{};
+        const Coords* next = point;
+        while(next!=0) {
+            ogrls.addPoint(next->getX(), next->getY());
+            next = next->getPred();
+        } 
+        poFeature->SetGeometry(&ogrls);
+
+        if (pathLayer->CreateFeature(poFeature) != OGRERR_NONE) {
+            printf("Failed to create feature in shapefile.\n");
+            exit(1);
+        }
+
+        OGRFeature::DestroyFeature(poFeature);
+
+    }
+    OGRDataSource::DestroyDataSource(pathDS);
+}
+
 bool argExists(std::string argSwitch, char* argv[], int argc) {
     for (int i = 0; i < argc; i++) {
         if (argSwitch.compare(argv[i]) == 0) {
@@ -609,6 +686,7 @@ int main(int argc, char* argv[]) {
                 "\tname of the friction field in cost surface\n"
                 "Addittionally following parameters can be specified with formt <switch> <value> (for example -o out_path.shp):\n"
                 "\t -o output_path_file_name, if no extension is given a folder will be assumed (at least with shapefile driver)\n"
+                "\t -i output_path_file_name, returns outputpaths as invidual paths with duplicates."
                 "\t -p output_points_file_name, if no extension is given a folder will be assumed (at least with shapefile driver)\n"
                 "\t -d maximum_distance_between_nodes in cost surface. Default value is 0 (no nodes added). This is used to add temporary additional nodes during LCP calculation if nodes are too far apart.\n"
                 "\t --driver output_driver_name. Default value is ESRI Shapefile (Supports drivers supported by OGR)\n"
@@ -643,7 +721,6 @@ int main(int argc, char* argv[]) {
 
 
     bool overwrite = argExists("--overwrite", argv, argc);
-    std::cout << "USING DUMB SIMPLIFY\n";
     std::string distance = "0";
     if (argExists("-d", argv, argc)) {
         distance = getArgVal("-d", argv, argc);
@@ -675,6 +752,10 @@ int main(int argc, char* argv[]) {
 
     if (argExists("-o", argv, argc)) {
         writeOutput(results, getArgVal("-o", argv, argc), driver, sr, overwrite);
+    }
+
+    if (argExists("-i", argv, argc)) {
+        writeOutputInvidual(results, getArgVal("-i", argv, argc), driver, sr, overwrite);
     }
     if (argExists("-p", argv, argc)) {
         writePoints(results, getArgVal("-p", argv, argc), driver, sr, overwrite);

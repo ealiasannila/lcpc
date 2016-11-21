@@ -151,6 +151,7 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
         }
         handled++;
         const Coords* node = minheap.top();
+        //std::cout<<node->toString()<<std::endl;
         if (node == 0) {
             std::cout << "current node = 0\n";
             exit(2);
@@ -184,7 +185,6 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
             }
         }
     }
-    std::cout << "actual searching finished\n";
     std::deque<const Coords*> res;
     for (std::pair<int, std::vector < p2t::Point*>> endpoints : this->targetPoints) {
         for (p2t::Point* ep : endpoints.second) {
