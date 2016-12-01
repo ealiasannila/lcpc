@@ -89,6 +89,7 @@
       </toolsSet>
       <compileType>
         <cTool>
+          <developmentMode>0</developmentMode>
           <commandLine>-g -O0</commandLine>
         </cTool>
         <ccTool>

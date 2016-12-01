@@ -28,7 +28,7 @@ bool fileExists(const std::string& name) {
     }
 }
 
-void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f) {
+void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f, bool useClosest) {
     const Coords* closest = 0;
     const Coords* c;
     for (auto it = finder->getCoordmap()->begin(); it != finder->getCoordmap()->end(); it++) {
@@ -37,8 +37,19 @@ void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f) {
             closest = c;
         }
     }
+    nSet n{};
+    if (useClosest) {
+        for (int pol : closest->belongsToPolygons()) {
+            finder->triangulate(pol);
+            for (auto it = closest->getNeighbours(pol)->begin(); it != closest->getNeighbours(pol)->end(); it++) {
+                std::pair<const Coords*, double> p = *it;
+                n.insert(p);
+            }
+        }
+    } else {
+        n = finder->findNeighbours(closest);
 
-    nSet n = finder->findNeighbours(closest);
+    }
     OGRSFDriver *driver;
     OGRRegisterAll();
     driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
@@ -634,13 +645,13 @@ void writeOutputInvidual(std::deque<const Coords*> results, std::string outputfi
         poFeature->SetField("cost", point->getToStart());
         poFeature->SetField("path_id", i);
         i++;
-       
+
         OGRLineString ogrls{};
         const Coords* next = point;
-        while(next!=0) {
+        while (next != 0) {
             ogrls.addPoint(next->getX(), next->getY());
             next = next->getPred();
-        } 
+        }
         poFeature->SetGeometry(&ogrls);
 
         if (pathLayer->CreateFeature(poFeature) != OGRERR_NONE) {
@@ -739,6 +750,10 @@ int main(int argc, char* argv[]) {
         std::cout << "Saving modified costsurface\n";
         savePolygons(&finder, outcs);
     }
+    std::cout << "saving neighburs" << std::endl;
+    saveNeighbours(&finder, "testdata/neighbours.shp", Coords{337013.2,6704923.2}, false);
+    //saveNeighbours(&finder, "testdata/neighbours_start.shp", Coords{337013.2,6704922.1}, true);
+
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     begin = std::clock();
     std::deque<const Coords*> results = finder.leastCostPath(alg);

@@ -21,7 +21,7 @@
 
 const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polygon) {
     nContainer intrsct;
-    intrsct = intersection(l->getLeftNeighbours(polygon), r->getNeighbours(polygon));
+    intrsct = intersection(l->getNeighbours(polygon), r->getNeighbours(polygon));
     for (nContainer::iterator it = intrsct.begin(); it != intrsct.end(); it++) {
         if (*it != 0 and (*it)->isRight(l, r) == -1) {
             return *it;
@@ -31,27 +31,34 @@ const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polyg
     return 0;
 }
 
-std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*neighbours) {
-    nContainer* ln = c->getLeftNeighbours(polygon);
-    if (ln->empty()) {
+std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*nset) {
+    std::vector<std::pair<const Coords*, double>>*neigbours = c->getNeighbours(polygon);
+    if (neigbours->empty()) {
         this->triangulate(polygon);
     }
-    nContainer* rn = c->getRightNeighbours(polygon);
+
     std::deque<Funnel> funnelQue{};
-    nContainer::iterator rit = rn->begin();
-    for (nContainer::iterator lit = ln->begin(); lit != ln->end(); lit++) {
-        Funnel f(*lit, c, *rit);
-        auto p = neighbours->insert(std::pair<const Coords*, double>(*lit, this->frictions[polygon]));
+    for (std::vector<std::pair<const Coords*, double>>::iterator nit = neigbours->begin(); nit + 1 != neigbours->end(); nit++) {
+        Funnel f(nit->first, c, (nit + 1)->first);
+        auto p = nset->insert(std::pair<const Coords*, double>(nit->first, this->frictions[polygon]));
         if (!p.second and p.first->second >this->frictions[polygon]) {
             p.first->second = this->frictions[polygon];
         }
-        p = neighbours->insert(std::pair<const Coords*, double>(*rit, this->frictions[polygon]));
-        if (!p.second and p.first->second >this->frictions[polygon]) {
-            p.first->second = this->frictions[polygon];
-        }
+        
         funnelQue.push_back(f);
-        rit++;
     }
+    
+    if (c->target) {
+        auto nit = neigbours->end() - 1;
+        Funnel f(nit->first, c, (neigbours->begin())->first);
+        auto p = nset->insert(std::pair<const Coords*, double>(nit->first, this->frictions[polygon]));
+        if (!p.second and p.first->second >this->frictions[polygon]) {
+            p.first->second = this->frictions[polygon];
+        }
+        
+        funnelQue.push_back(f);
+    }
+     
     return funnelQue;
 
 }
@@ -74,7 +81,9 @@ void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neig
     }
 }
 
+
 nSet LcpFinder::findNeighbours(const Coords* c) {
+    //std::cout<<"C: "<<c->toString()<<std::endl;
     nSet neighbours{};
     std::vector<int> polygons = c->belongsToPolygons();
     for (int p : polygons) {
@@ -166,6 +175,7 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
 
         minheap.pop();
         nSet neighbours = findNeighbours(node);
+        //std::cout << node->toString() << "# of neighbours: " << neighbours.size() << std::endl;
         for (std::pair<const Coords*, int> p : neighbours) {
             const Coords* n = p.first;
             if (n == 0) {
@@ -262,7 +272,9 @@ void LcpFinder::triangulate(int polygon) {
                 r = 0;
             }
 
-            cp[i]->addNeighbours(cp[l], cp[r], polygon);
+            cp[i]->addNeighbours(cp[l], polygon);
+            cp[i]->addNeighbours(cp[r], polygon);
+
 
         }
     }
@@ -319,7 +331,7 @@ void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
 
 void LcpFinder::addStartPoint(p2t::Point* startPoint, int polygon) {
     this->addSteinerPoint(startPoint, polygon);
-    
+
     this->startPoint2 = & * this->coordmap.find(Coords(startPoint->x, startPoint->y));
 
 }

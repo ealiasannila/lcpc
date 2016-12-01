@@ -14,6 +14,7 @@
 #include <math.h>
 #include <limits>
 #include <iomanip>
+#include <algorithm>
 
 Coords::Coords(double newx, double newy) {
     x = newx;
@@ -38,24 +39,9 @@ Coords::Coords() {
     this->predecessor = 0;
 }
 
-nContainer* Coords::getRightNeighbours(int polygon) const {
+std::vector<std::pair<const Coords*, double>>* Coords::getNeighbours(int polygon) const {
     try {
-        return &this->rightNeighbours[polygon];
-    } catch (const std::out_of_range& oor) {
-        exit(1);
-    }
-}
-
-nContainer* Coords::getLeftNeighbours(int polygon) const {
-    try {
-        return &this->leftNeighbours[polygon];
-    } catch (const std::out_of_range& oor) {
-        exit(1);
-    }
-}
-std::set<const Coords*>* Coords::getNeighbours(int polygon) const {
-    try {
-        return &this->neighbours[polygon];
+        return &(this->neighbours.at(polygon));
     } catch (const std::out_of_range& oor) {
         exit(1);
     }
@@ -63,23 +49,26 @@ std::set<const Coords*>* Coords::getNeighbours(int polygon) const {
 
 std::vector<int> Coords::belongsToPolygons() const {
     std::vector<int> polygons;
-    for (std::pair<int, nContainer> p : this->leftNeighbours) {
+    for (std::pair<int, std::vector<std::pair<const Coords*, double>>> p : this->neighbours) {
         polygons.push_back(p.first);
     }
     return polygons;
 }
 
 void Coords::addToPolygon(int polygon) const {
-    this->neighbours.insert(std::pair<int, std::set<const Coords*>>(polygon, std::set<const Coords*>()));
-    this->leftNeighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
-    this->rightNeighbours.insert(std::pair<int, nContainer>(polygon, nContainer()));
+    this->neighbours.insert(std::make_pair(polygon, std::vector<std::pair<const Coords*, double>>
+    {
+    }));
+
 }
 
-void Coords::addNeighbours(const Coords* l, const Coords* r, int polygon) const {
+void Coords::addNeighbours(const Coords* c, int polygon) const {
     try {
-        neighbours[polygon].insert(r);
-        leftNeighbours[polygon].push_back(l);
-        rightNeighbours[polygon].push_back(r);
+        RoataryCompare comp{this};
+        auto it = std::lower_bound(neighbours[polygon].begin(), neighbours[polygon].end(), c, comp);
+        if (it == neighbours[polygon].end() or it->first != c) {
+            neighbours[polygon].insert(it, std::make_pair(c, 0.0));
+        }
     } catch (const std::out_of_range& oor) {
         exit(1);
     }
@@ -88,6 +77,7 @@ void Coords::addNeighbours(const Coords* l, const Coords* r, int polygon) const 
 void Coords::setToStart(double cost) const {
     this->toStart = cost;
 }
+
 void Coords::setToEnd(double cost) const {
     this->toEnd = cost;
 }
@@ -98,20 +88,17 @@ void Coords::setPred(const Coords* pred) const {
 
 std::string Coords::toString() const {
     std::stringstream sstm;
-    sstm<<std::setprecision(4);
-    sstm<<std::fixed;
-    sstm <<"xy: "<<this->x<<","<<this->y<<std::endl; 
-    sstm<<"polygons: ";
-    for (std::pair<int, nContainer> p : this->leftNeighbours) {
-        sstm << p.first << " ";
-    }
+    sstm << std::setprecision(4);
+    sstm << std::fixed;
+    sstm << "xy: " << this->x << "," << this->y << std::endl;
+
     return sstm.str();
 }
 
 int Coords::isRight(const Coords* c1, const Coords* c2) const {
     double d = (c2->getY() - c1->getY()) * (x - c2->getX()) - (c2->getX() - c1->getX()) * (y - c2->getY());
-    
-    if(fabs(d)<0.000001){
+
+    if (fabs(d) < 0.000001) {
         return 0;
     }
     if (d < 0) {
@@ -120,13 +107,11 @@ int Coords::isRight(const Coords* c1, const Coords* c2) const {
     if (d > 0) {
         return 1;
     }
-    
+
 }
 
-
-
 bool Coords::operator<(const Coords& c) const {
-    return this->getX()< c.getX() or(this->getX()==c.getX() and this->getY()< c.getY());
+    return this->getX() < c.getX() or(this->getX() == c.getX() and this->getY() < c.getY());
 }
 
 bool Coords::operator==(const Coords& c) const {

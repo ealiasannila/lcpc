@@ -10,16 +10,14 @@
 #include <string>
 #include "defs.h"
 #include <set>
-
+struct RotaryCompare;
 class Coords {
 private:
 
     mutable double toStart;
     mutable double toEnd;
     mutable const Coords* predecessor;
-    mutable std::tr1::unordered_map<int, std::set<const Coords*>> neighbours;
-    mutable allNContainer leftNeighbours;
-    mutable allNContainer rightNeighbours;
+    mutable std::map<int, std::vector<std::pair<const Coords*, double>>> neighbours;
     double x;
     double y;
 
@@ -38,6 +36,7 @@ public:
     double getToStart() const {
         return toStart;
     }
+
     double getToEnd() const {
         return toEnd;
     }
@@ -53,12 +52,10 @@ public:
         return y;
     }
     int isRight(const Coords* c1, const Coords* c2) const;
-    nContainer* getRightNeighbours(int polygon) const;
-    nContainer* getLeftNeighbours(int polygon) const;
-    std::set<const Coords*>* getNeighbours(int polygon) const;
+    std::vector<std::pair<const Coords*, double>>*getNeighbours(int polygon) const;
     std::vector<int> belongsToPolygons() const;
     void addToPolygon(int polygon) const;
-    void addNeighbours(const Coords* l, const Coords* r, int polygon) const;
+    void addNeighbours(const Coords* c, int polygon) const;
     std::string toString() const;
     virtual ~Coords();
 
@@ -67,6 +64,17 @@ public:
 
     bool operator==(const Coords& c) const;
     bool operator!=(const Coords& c) const;
+};
+
+struct RoataryCompare {
+    const Coords* center;
+
+    RoataryCompare(const Coords* c) {
+        center = c;
+    }
+    bool operator()( std::pair<const Coords*, double> p,const Coords* c) const {
+        return center->isRight(p.first, c)==1;
+    }
 };
 
 #endif /* const Coords_H_ */

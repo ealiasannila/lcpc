@@ -8,6 +8,7 @@
 #include "funnel.h"
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 Funnel::Funnel(const Coords* l, const Coords* a, const Coords* r) {
     lc.push_back(a);
@@ -120,31 +121,47 @@ void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, n
             int lastRemaining;
         case 0:
         {
+
+            //std::cout<<"CASE 0"<<std::endl;
+            //std::cout<<o->toString()<<std::endl;
             funnelQueue->push_back(this->split(o));
             auto res = neighbours->insert(std::pair<const Coords*, int>(o, friction));
-            if (!res.second and res.first->second>friction) {
+            if (!res.second and res.first->second > friction) {
                 res.first->second = friction;
             }
             break;
         }
         case -1:
         {
+            //std::cout<<"CASE -1"<<std::endl;
+            //if (std::find(lc.begin(), lc.end(), o) == lc.end()) {
+            ////    std::cout<<"not found yet"<<o->toString()<<std::endl;
+
             lastRemaining = this->findInChain(o, lc, 1);
             if (lastRemaining == -1) {
                 lc.push_back(o);
+
             } else {
                 this->shrink(o, &lc, lastRemaining);
             }
+
             break;
         }
         case 1:
         {
+
+            //std::cout<<"CASE 1"<<std::endl;
+            //if (std::find(rc.begin(), rc.end(), o) == rc.end()) {
+            //    std::cout<<"not found yet"<<o->toString()<<std::endl;
             lastRemaining = this->findInChain(o, rc, -1);
             if (lastRemaining == -1) {
                 rc.push_back(o);
+
+
             } else {
                 this->shrink(o, &rc, lastRemaining);
             }
+            //}
             break;
         }
     }
