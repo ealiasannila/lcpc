@@ -13,8 +13,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>
@@ -34,10 +32,10 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 -o path -p points -d 500 --driver "ESRI Shapefile" -a astar</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds4/cs.shp /home/elias/Documents/lcp_test_data/ds4/targets.shp /home/elias/Documents/lcp_test_data/ds4/start.shp friction -p /home/elias/Documents/lcp_test_data/ds4/visi_path.shp --overwrite</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -o testdata/paths.shp -a dijkstra --overwrite</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -o testdata/paths.shp -a dijkstra --overwrite</runcommand>
+        <runcommand>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <console-type>2</console-type>
@@ -58,6 +56,8 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
+        <gdb_signals>
+        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>
@@ -69,9 +69,6 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp --scs</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/least_cost_path/trouble.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/least_cost_path/trouble.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -o /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -o /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"/least_cost_path /home/elias/Documents/lcp_test_data/ds3/cs.shp /home/elias/Documents/lcp_test_data/ds3/targets.shp /home/elias/Documents/lcp_test_data/ds3/start.shp friction -p /home/elias/Documents/lcp_test_data/ds3/visi_path.shp</runcommandpicklistitem>
@@ -79,8 +76,11 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}"   -a dijkstra --overwrite</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp  -a dijkstra --overwrite</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite -d 10 -l testdata/linear.shp --fwc along --bwf along</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite -d 10 -l testdata/linear.shp --fwc along --bwc along</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite</runcommand>
+        <runcommand>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <console-type>2</console-type>

@@ -55,7 +55,7 @@ public:
     std::vector<std::pair<const Coords*, double>>*getNeighbours(int polygon) const;
     std::vector<int> belongsToPolygons() const;
     void addToPolygon(int polygon) const;
-    void addNeighbours(const Coords* c, int polygon) const;
+    void addNeighbours(const Coords* c, int polygon, double friction) const;
     std::string toString() const;
     virtual ~Coords();
 

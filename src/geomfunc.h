@@ -25,7 +25,7 @@ double inline eucDistance(p2t::Point* p1, const Coords* p2) {
     return std::sqrt(std::pow(p1->x - p2->getX(), 2) + std::pow(p1->y - p2->getY(), 2));
 }
 
-nContainer inline intersection(std::vector<std::pair<const Coords*,double>>* ln, std::vector<std::pair<const Coords*, double>>* rn) {
+nContainer inline intersection(std::vector<std::pair<const Coords*, double>>*ln, std::vector<std::pair<const Coords*, double>>*rn) {
     nContainer res;
     for (auto li = ln->begin(); li != ln->end(); li++) {
         for (auto ri = rn->begin(); ri != rn->end(); ri++) {
@@ -41,7 +41,6 @@ nContainer inline intersection(std::vector<std::pair<const Coords*,double>>* ln,
     }
     return res;
 }
-
 
 int inline addIntermidiatePoints(std::vector<p2t::Point*>* vec, std::vector<p2t::Point*>::iterator pit, std::vector<p2t::Point*>::iterator nextit, double maxDist) {
     p2t::Point* p = *pit;
@@ -59,17 +58,27 @@ int inline addIntermidiatePoints(std::vector<p2t::Point*>* vec, std::vector<p2t:
     return pointsToAdd;
 }
 
-void inline intermidiatePoints(std::vector<std::vector<p2t::Point*>>*points, double maxDist) {
-    for (unsigned int ring = 0; ring < points->size(); ring++) {
-        for (unsigned int point = 0; point < points->at(ring).size(); point++) {
-            // add intermidiate points if next point is too far.
-            std::vector<p2t::Point*>::iterator next = (point + 1 != points->at(ring).size()) ? points->at(ring).begin() + point + 1 : points->at(ring).begin();
-            if (eucDistance(points->at(ring).at(point), *next) + 0.0000001 > maxDist) {
-
-                addIntermidiatePoints(&points->at(ring), points->at(ring).begin() + point, next, maxDist);
-            }
+void inline intermidiatePointsForRing(std::vector<p2t::Point*>*points, double maxDist, bool isring) {
+    for (unsigned int point = 0; point < points->size(); point++) {
+        // add intermidiate points if next point is too far.
+        if (!isring and point + 1 == points->size()) {
+            break;
+        }
+        std::vector<p2t::Point*>::iterator next = (point + 1 != points->size()) ? points->begin() + point + 1 : points->begin();
+        if (eucDistance(points->at(point), *next) + 0.0000001 > maxDist) {
+            addIntermidiatePoints(points, points->begin() + point, next, maxDist);
         }
     }
+}
+
+void inline intermidiatePoints(std::vector<std::vector<p2t::Point*>>*points, double maxDist, bool isring) {
+    for (unsigned int ring = 0; ring < points->size(); ring++) {
+        intermidiatePointsForRing(&points->at(ring), maxDist, isring);
+    }
+}
+
+void inline intermidiatePoints(std::vector<std::vector<p2t::Point*>>*points, double maxDist) {
+    return intermidiatePoints(points, maxDist, true);
 }
 
 bool inline compDijkstra(const Coords* x, const Coords* y) {
@@ -119,6 +128,39 @@ int inline Orient(p2t::Point& pa, p2t::Point& pb, p2t::Point& pc) {
         return -1;
     }
     return 1;
+}
+
+bool inline pointOnSegment(p2t::Point* l1, p2t::Point* l2, p2t::Point* point) {
+    double cross = (point->y - l1->y) * (l2->x - l1->x) - (point->x - l1->x) * (l2->y - l1->y);
+    if (abs(cross) > 0.0001) {
+        return false;
+    }
+    double dot = (point->x - l1->x) * (l2->x - l1->x) + (point->y - l1->y)*(l2->y - l1->y);
+    if (dot < 0) {
+        return false;
+    }
+    double sqrd = (l2->x - l1->x)*(l2->x - l1->x) + (l2->y - l1->y)*(l2->y - l1->y);
+    if (dot > sqrd) {
+        return false;
+    }
+    return true;
+}
+
+int inline previousPoint(OGRLinearRing* ring, p2t::Point* intersect) {
+    int doubleLast = 0;
+    if(abs(ring->getX(0)-ring->getX(ring->getNumPoints()-1))<0.00001 and abs(ring->getY(0)-ring->getY(ring->getNumPoints()-1))<0.00001){
+        doubleLast = 1;
+    }
+    for (int i = 0; i < ring->getNumPoints()-doubleLast; i++) {
+        int ni = (i + 1) % ring->getNumPoints();
+        p2t::Point prev {ring->getX(i),ring->getY(i)};
+        p2t::Point next {ring->getX(ni),ring->getY(ni)};
+        if (pointOnSegment(&prev, &next,intersect)) {
+            return i;
+        }
+
+    }
+    return -1;
 }
 
 std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon * polygon) {

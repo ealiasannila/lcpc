@@ -116,7 +116,7 @@ int Funnel::inFirstSector(const Coords* o) {
  *  2. shrinks either chain
  *  3. expands either chain
  */
-void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, nSet* neighbours, double friction) {
+void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, nSet* nset, double friction) {
     switch (this->inFirstSector(o)) {
             int lastRemaining;
         case 0:
@@ -125,7 +125,7 @@ void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, n
             //std::cout<<"CASE 0"<<std::endl;
             //std::cout<<o->toString()<<std::endl;
             funnelQueue->push_back(this->split(o));
-            auto res = neighbours->insert(std::pair<const Coords*, int>(o, friction));
+            auto res = nset->insert(std::pair<const Coords*, int>(o, friction));
             if (!res.second and res.first->second > friction) {
                 res.first->second = friction;
             }
@@ -144,7 +144,7 @@ void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, n
             } else {
                 this->shrink(o, &lc, lastRemaining);
             }
-
+            //}
             break;
         }
         case 1:

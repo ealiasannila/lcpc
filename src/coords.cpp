@@ -62,12 +62,15 @@ void Coords::addToPolygon(int polygon) const {
 
 }
 
-void Coords::addNeighbours(const Coords* c, int polygon) const {
+void Coords::addNeighbours(const Coords* c, int polygon, double friction) const {
     try {
         RoataryCompare comp{this};
         auto it = std::lower_bound(neighbours[polygon].begin(), neighbours[polygon].end(), c, comp);
         if (it == neighbours[polygon].end() or it->first != c) {
-            neighbours[polygon].insert(it, std::make_pair(c, 0.0));
+            neighbours[polygon].insert(it, std::make_pair(c, friction));
+        }else if(it->first == c and it->second>friction){
+            //std::cout<<"updating friction\n";
+            it->second = friction;
         }
     } catch (const std::out_of_range& oor) {
         exit(1);
@@ -115,7 +118,7 @@ bool Coords::operator<(const Coords& c) const {
 }
 
 bool Coords::operator==(const Coords& c) const {
-    double tol = 0.000001;
+    double tol = 0.05;
     if (std::abs(c.getX() - this->getX()) < tol and std::abs(c.getY() - this->getY()) < tol) {
         return true;
     }

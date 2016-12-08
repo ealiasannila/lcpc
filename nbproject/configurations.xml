@@ -202,7 +202,7 @@
       </toolsSet>
       <compileType>
         <cTool>
-          <developmentMode>5</developmentMode>
+          <developmentMode>6</developmentMode>
           <incDir>
             <pElem>/usr/include</pElem>
           </incDir>
