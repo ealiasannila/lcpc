@@ -14,13 +14,15 @@
 #include <math.h>
 #include <limits>
 #include <iomanip>
-#include <algorithm>
+#include <functional>
 
 Coords::Coords(double newx, double newy) {
     x = newx;
     y = newy;
     toStart = -1;
     this->predecessor = 0;
+    this->target = false;
+    this->linePt = false;
 }
 
 Coords::Coords(double newx, double newy, int polygon, bool target) {
@@ -30,6 +32,17 @@ Coords::Coords(double newx, double newy, int polygon, bool target) {
     this->addToPolygon(polygon);
     this->predecessor = 0;
     this->target = target;
+    this->linePt = false;
+}
+
+Coords::Coords(double newx, double newy, int polygon, bool target, bool linePt) {
+    x = newx;
+    y = newy;
+    toStart = -1;
+    this->addToPolygon(polygon);
+    this->predecessor = 0;
+    this->target = target;
+    this->linePt = linePt;
 }
 
 Coords::Coords() {
@@ -37,12 +50,22 @@ Coords::Coords() {
     x = -1;
     y = -1;
     this->predecessor = 0;
+    this->target = false;
+    this->linePt = false;
 }
 
-std::vector<std::pair<const Coords*, double>>* Coords::getNeighbours(int polygon) const {
+std::vector<std::pair<const Coords*, double>>*Coords::getNeighbours(int polygon) const {
     try {
         return &(this->neighbours.at(polygon));
     } catch (const std::out_of_range& oor) {
+        std::cout << std::fixed << this->getX() << "," << this->getY() << std::endl;
+        std::cout << "asking neighbours from polygon where doesn't belong\n";
+        std::cout << "getting from: " << polygon << std::endl;
+        std::cout << "belongs to:";
+        for (int p : this->belongsToPolygons()) {
+            std::cout << " " << p;
+        }
+        std::cout << std::endl;
         exit(1);
     }
 }
@@ -55,7 +78,12 @@ std::vector<int> Coords::belongsToPolygons() const {
     return polygons;
 }
 
+bool Coords::belongsToPolygon(int p) const {
+    return this->neighbours.find(p) != this->neighbours.end();
+}
+
 void Coords::addToPolygon(int polygon) const {
+
     this->neighbours.insert(std::make_pair(polygon, std::vector<std::pair<const Coords*, double>>
     {
     }));
@@ -63,16 +91,22 @@ void Coords::addToPolygon(int polygon) const {
 }
 
 void Coords::addNeighbours(const Coords* c, int polygon, double friction) const {
+    if (c->linePt) {
+        
+        std::cout<<std::fixed<<c->getX()<<","<<c->getY()<<std::endl;
+        std::cout << friction << std::endl;
+    }
     try {
-        RoataryCompare comp{this};
-        auto it = std::lower_bound(neighbours[polygon].begin(), neighbours[polygon].end(), c, comp);
-        if (it == neighbours[polygon].end() or it->first != c) {
-            neighbours[polygon].insert(it, std::make_pair(c, friction));
-        }else if(it->first == c and it->second>friction){
-            //std::cout<<"updating friction\n";
+
+        auto it = std::lower_bound(neighbours.at(polygon).begin(), neighbours.at(polygon).end(), c, std::bind(&Coords::compareNeighbours, this, std::placeholders::_1, std::placeholders::_2, polygon));
+        if ((it == neighbours.at(polygon).end() or it->first != c) and (neighbours.at(polygon).empty() or c != neighbours.at(polygon).at(0).first)) {
+            neighbours.at(polygon).insert(it, std::make_pair(c, friction));
+        } else if (it->first == c and it->second > friction) {
+            std::cout << "updating friction\n";
             it->second = friction;
         }
     } catch (const std::out_of_range& oor) {
+        std::cout << "trying to add neighbours to polygon where doesn't belong\n";
         exit(1);
     }
 }
@@ -101,7 +135,7 @@ std::string Coords::toString() const {
 int Coords::isRight(const Coords* c1, const Coords* c2) const {
     double d = (c2->getY() - c1->getY()) * (x - c2->getX()) - (c2->getX() - c1->getX()) * (y - c2->getY());
 
-    if (fabs(d) < 0.000001) {
+    if (std::abs(d) < 0.000001) {
         return 0;
     }
     if (d < 0) {

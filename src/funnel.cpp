@@ -135,16 +135,16 @@ void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, n
         {
             //std::cout<<"CASE -1"<<std::endl;
             //if (std::find(lc.begin(), lc.end(), o) == lc.end()) {
-            ////    std::cout<<"not found yet"<<o->toString()<<std::endl;
+                ////    std::cout<<"not found yet"<<o->toString()<<std::endl;
 
-            lastRemaining = this->findInChain(o, lc, 1);
-            if (lastRemaining == -1) {
-                lc.push_back(o);
+                lastRemaining = this->findInChain(o, lc, 1);
+                if (lastRemaining == -1) {
+                    lc.push_back(o);
 
-            } else {
-                this->shrink(o, &lc, lastRemaining);
-            }
-            //}
+                } else {
+                    this->shrink(o, &lc, lastRemaining);
+                }
+            
             break;
         }
         case 1:
@@ -152,16 +152,16 @@ void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, n
 
             //std::cout<<"CASE 1"<<std::endl;
             //if (std::find(rc.begin(), rc.end(), o) == rc.end()) {
-            //    std::cout<<"not found yet"<<o->toString()<<std::endl;
-            lastRemaining = this->findInChain(o, rc, -1);
-            if (lastRemaining == -1) {
-                rc.push_back(o);
+                //    std::cout<<"not found yet"<<o->toString()<<std::endl;
+                lastRemaining = this->findInChain(o, rc, -1);
+                if (lastRemaining == -1) {
+                    rc.push_back(o);
 
 
-            } else {
-                this->shrink(o, &rc, lastRemaining);
-            }
-            //}
+                } else {
+                    this->shrink(o, &rc, lastRemaining);
+                }
+            
             break;
         }
     }

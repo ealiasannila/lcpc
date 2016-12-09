@@ -132,7 +132,7 @@ int inline Orient(p2t::Point& pa, p2t::Point& pb, p2t::Point& pc) {
 
 bool inline pointOnSegment(p2t::Point* l1, p2t::Point* l2, p2t::Point* point) {
     double cross = (point->y - l1->y) * (l2->x - l1->x) - (point->x - l1->x) * (l2->y - l1->y);
-    if (abs(cross) > 0.0001) {
+    if (std::abs(cross) > 0.000001) {
         return false;
     }
     double dot = (point->x - l1->x) * (l2->x - l1->x) + (point->y - l1->y)*(l2->y - l1->y);
@@ -146,22 +146,6 @@ bool inline pointOnSegment(p2t::Point* l1, p2t::Point* l2, p2t::Point* point) {
     return true;
 }
 
-int inline previousPoint(OGRLinearRing* ring, p2t::Point* intersect) {
-    int doubleLast = 0;
-    if(abs(ring->getX(0)-ring->getX(ring->getNumPoints()-1))<0.00001 and abs(ring->getY(0)-ring->getY(ring->getNumPoints()-1))<0.00001){
-        doubleLast = 1;
-    }
-    for (int i = 0; i < ring->getNumPoints()-doubleLast; i++) {
-        int ni = (i + 1) % ring->getNumPoints();
-        p2t::Point prev {ring->getX(i),ring->getY(i)};
-        p2t::Point next {ring->getX(ni),ring->getY(ni)};
-        if (pointOnSegment(&prev, &next,intersect)) {
-            return i;
-        }
-
-    }
-    return -1;
-}
 
 std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon * polygon) {
     int scale = 10000;

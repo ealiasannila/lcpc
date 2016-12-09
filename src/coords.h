@@ -10,7 +10,8 @@
 #include <string>
 #include "defs.h"
 #include <set>
-struct RotaryCompare;
+#include<iostream>
+
 class Coords {
 private:
 
@@ -24,9 +25,11 @@ private:
 
 public:
     bool target;
+    bool linePt;
     Coords();
     Coords(double x, double y);
     Coords(double x, double y, int polygon, bool target);
+    Coords(double x, double y, int polygon, bool target, bool linePt);
 
     double getX() const {
         return x;
@@ -51,6 +54,7 @@ public:
     double getY() const {
         return y;
     }
+    bool belongsToPolygon(int p) const;
     int isRight(const Coords* c1, const Coords* c2) const;
     std::vector<std::pair<const Coords*, double>>*getNeighbours(int polygon) const;
     std::vector<int> belongsToPolygons() const;
@@ -59,22 +63,34 @@ public:
     std::string toString() const;
     virtual ~Coords();
 
+    bool compareNeighbours(std::pair<const Coords*, double> p, const Coords* c, int polygon) const {
+        const Coords* first;
+        try {
+            first = this->neighbours.at(polygon).at(0).first;
+        } catch (const std::out_of_range& oor) {
+            return this->isRight(p.first, c) == 1;
+        }
+        if(p.first == first){
+            return true;
+        }if(c == first){
+            return true;
+        }
+        int p_half = p.first->isRight(first, this);
+        int c_half = c->isRight(first, this);
+       
+        if(p_half != c_half){
+            return p_half<c_half;
+        }
+        return this->isRight(p.first, c) == 1;
 
+
+    }
     bool operator<(const Coords& c) const;
 
     bool operator==(const Coords& c) const;
     bool operator!=(const Coords& c) const;
 };
 
-struct RoataryCompare {
-    const Coords* center;
 
-    RoataryCompare(const Coords* c) {
-        center = c;
-    }
-    bool operator()( std::pair<const Coords*, double> p,const Coords* c) const {
-        return center->isRight(p.first, c)==1;
-    }
-};
 
 #endif /* const Coords_H_ */

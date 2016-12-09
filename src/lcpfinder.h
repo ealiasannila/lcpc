@@ -34,6 +34,7 @@ private:
     std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
     std::map<int, std::vector<p2t::Point*>> targetPoints;
+    std::map<int, std::vector<p2t::Point*>> linePoints;
     std::vector<double> frictions;
     std::vector<bool> triangulated;
 
@@ -59,9 +60,11 @@ public:
     }
     std::deque<const Coords*> leastCostPath(int algorithm);
     void addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction);
-    void addLine(std::vector<p2t::Point*>*, double frictionForwards,double frictionBackwards, std::array<int,2> polygons);
+    //void addLine(std::vector<p2t::Point*>*, double frictionForwards,double frictionBackwards, std::array<int,2> polygons);
     void addStartPoint(p2t::Point* start, int polygon);
     void addSteinerPoint(p2t::Point* steinerpoint, int polygon);
+    const Coords* addLinePoint(p2t::Point* linepoint, int polygon);
+    void addLine(std::vector<p2t::Point*>* points, double friction);
     void triangulate(int polygon);
     const Coords* startPoint;
     std::array<int,2> containingPolygon(p2t::Point* p);

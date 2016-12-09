@@ -33,31 +33,31 @@ const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polyg
 
 void LcpFinder::initQue(std::vector<std::pair<const Coords*, double>>::iterator nit, std::vector<std::pair<const Coords*, double>>::iterator next, const Coords* c, nSet*nset, std::deque<Funnel>* funnelQue) {
     Funnel f(nit->first, c, (next)->first);
+
     double fric = nit->second;
     auto p = nset->insert(std::pair<const Coords*, double>(nit->first, fric));
     if (!p.second and p.first->second > fric) {
         p.first->second = fric;
     }
-
     funnelQue->push_back(f);
+
 }
 
 std::deque<Funnel> LcpFinder::initFQues(const Coords* c, int polygon, nSet*nset) {
     std::vector<std::pair<const Coords*, double>>*neigbours = c->getNeighbours(polygon);
-
     if (!this->triangulated[polygon]) {
         this->triangulate(polygon);
         this->triangulated[polygon] = true;
     }
 
     std::deque<Funnel> funnelQue{};
-    if (c == this->startPoint) {
+    if (c == this->startPoint or c->linePt) {
         this->initQue(neigbours->end() - 1, neigbours->begin(), c, nset, &funnelQue);
-
     }
     for (std::vector<std::pair<const Coords*, double>>::iterator nit = neigbours->begin(); nit + 1 != neigbours->end(); nit++) {
         this->initQue(nit, nit + 1, c, nset, &funnelQue);
     }
+
     /*
     std::cout << "BEFORE:\n";
     for (auto it = nset->begin(); it != nset->end(); it++) {
@@ -74,7 +74,9 @@ void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neig
     std::deque<Funnel> funnelQue = this->initFQues(c, polygon, neighbours);
     std::pair<const Coords*, const Coords*> base;
     const Coords* o;
+
     while (!funnelQue.empty()) {
+        //std::cout<<"loop..."<<std::endl;
         Funnel f = funnelQue.front();
         funnelQue.pop_front();
         base = f.getBase();
@@ -88,11 +90,26 @@ void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neig
 }
 
 nSet LcpFinder::findNeighbours(const Coords* c) {
+
     //std::cout<<"C: "<<c->toString()<<std::endl;
     nSet neighbours{};
+    if (c != this->startPoint and c->target) {
+        return neighbours;
+    }
     std::vector<int> polygons = c->belongsToPolygons();
     for (int p : polygons) {
-        findNeighboursInPolygon(c, p, &neighbours);
+        if (p != -1) {
+            findNeighboursInPolygon(c, p, &neighbours);
+        }
+    }
+    if (c->linePt) {
+        std::vector<std::pair <const Coords*, double>>*lineNeighbours = c->getNeighbours(-1);
+        for (auto it = lineNeighbours->begin(); it != lineNeighbours->end(); it++) {
+            std::pair<nSet::iterator, bool> insert = neighbours.insert(*it);
+            if(!insert.second and insert.first->second>it->second){
+                insert.first->second = it->second;
+            }
+        }
     }
     return neighbours;
 }
@@ -244,6 +261,20 @@ void LcpFinder::triangulate(int polygon) {
             cdt.AddPoint(sp);
         }
     }
+
+    bool linepts = true;
+    std::vector<p2t::Point*> linepoints;
+    try {
+        linepoints = this->linePoints.at(polygon);
+    } catch (const std::out_of_range& oor) {
+        linepts = false;
+    }
+    if (linepts) {
+        for (p2t::Point* lp : linepoints) {
+            cdt.AddPoint(lp);
+        }
+    }
+
     cdt.Triangulate();
     std::vector<p2t::Triangle*> triangles = cdt.GetTriangles();
     for (std::vector<p2t::Triangle*>::iterator it = triangles.begin(); it != triangles.end(); it++) {
@@ -302,6 +333,7 @@ LcpFinder::~LcpFinder() {
 }
 
 void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction) {
+    //std::cout<<"adding POLYGON\n";
     int polygon = polygons.size();
     if (friction < this->minFriction) {
         minFriction = friction;
@@ -334,6 +366,7 @@ void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double 
     }
 }
 
+/*
 void LcpFinder::addLine(std::vector<p2t::Point*>* line, double frictionForwards, double frictionBackwards, std::array<int, 2> polygons) {
     const Coords* prev = 0;
     for (int i = 0; i < line->size(); i++) {
@@ -366,7 +399,7 @@ void LcpFinder::addLine(std::vector<p2t::Point*>* line, double frictionForwards,
 
     }
 }
-
+ */
 void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
 
     if (this->targetPoints.find(polygon) == this->targetPoints.end()) {
@@ -380,6 +413,39 @@ void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
         std::cout << success.first->toString() << std::endl;
     } else {
         this->numOfTargets++;
+    }
+}
+
+const Coords* LcpFinder::addLinePoint(p2t::Point* point, int polygon) {
+
+    if (this->linePoints.find(polygon) == this->linePoints.end()) {
+        this->linePoints[polygon] = std::vector<p2t::Point*>{point};
+    } else {
+        this->linePoints[polygon].push_back(point);
+    }
+    std::pair < std::tr1::unordered_set<Coords>::iterator, bool> success = this->coordmap.insert(Coords(point->x, point->y, polygon, false, true));
+    if (!success.second) {
+        success.first->addToPolygon(polygon);
+    }
+    return &*success.first;
+}
+
+void LcpFinder::addLine(std::vector<p2t::Point*>* points, double friction) {
+    const Coords* prev = 0;
+    for (auto it = points->begin(); it != points->end(); it++) {
+        p2t::Point* p = *it;
+        std::array<int, 2> polygons = containingPolygon(p);
+        const Coords* c = addLinePoint(p, polygons[0]);
+        if (polygons[1] != -1) {
+            addLinePoint(p, polygons[1]);
+        }
+        c->addToPolygon(-1);
+        if (prev != 0) {
+            c->addNeighbours(prev, -1, friction);
+            prev->addNeighbours(c, -1, friction);
+           
+        }
+        prev = c;
     }
 }
 
