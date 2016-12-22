@@ -30,7 +30,7 @@ bool fileExists(const std::string& name) {
 }
 
 void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
-    
+
     //finder->triangulate(polygon);
     std::tr1::unordered_set<Coords, CoordsHasher>* cm = finder->getCoordmap();
 
@@ -62,10 +62,10 @@ void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
         printf("Creating polygon field failed.\n");
         exit(1);
     }
-    for ( auto it = cm->begin(); it != cm->end(); it++) {
+    for (auto it = cm->begin(); it != cm->end(); it++) {
         const Coords c = *it;
         if (c.belongsToPolygon(polygon)) {
-            for (auto p = c.getNeighbours(polygon)->begin(); p != c.getNeighbours(polygon)->end() ;p++) {
+            for (auto p = c.getNeighbours(polygon)->begin(); p != c.getNeighbours(polygon)->end(); p++) {
                 OGRFeature *feature;
                 feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
                 OGRLineString line{};
@@ -845,6 +845,7 @@ void printFinder(LcpFinder* finder) {
 }
 
 int main(int argc, char* argv[]) {
+    
 
     OGRRegisterAll();
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
@@ -916,13 +917,13 @@ int main(int argc, char* argv[]) {
 
     if (argExists("-l", argv, argc)) {
         std::cout << "Reading linear\n";
-        readLinear(getArgVal("-l", argv, argc).c_str(), &finder, getArgVal("--fwc", argv, argc).c_str(), getArgVal("--bwc", argv, argc).c_str(), distance);
+        //readLinear(getArgVal("-l", argv, argc).c_str(), &finder, getArgVal("--fwc", argv, argc).c_str(), getArgVal("--bwc", argv, argc).c_str(), distance);
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     //saveNeighbours(&finder, "testdata/closest.shp", Coords{309242,6726833}, false);
-    saveNeighbours(&finder, "testdata/neighbours.shp", Coords{313753.56,6725001.80}, false);
+    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{309322,6714704}, false);
     //saveTriangulation(&finder,"testdata/triangulation.shp", 0);
-    exit(0);
+    //exit(0);
     begin = std::clock();
     std::deque<const Coords*> results = finder.leastCostPath(alg);
     secs = double(std::clock() - begin) / CLOCKS_PER_SEC;

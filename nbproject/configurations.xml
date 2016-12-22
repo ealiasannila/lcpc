@@ -50,6 +50,7 @@
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="src" displayName="src" projectFiles="true">
+        <itemPath>src/compare.h</itemPath>
         <itemPath>src/coords.cpp</itemPath>
         <itemPath>src/coords.h</itemPath>
         <itemPath>src/defs.h</itemPath>
@@ -171,6 +172,8 @@
       </item>
       <item path="lib/sweep/sweep_context.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="src/compare.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="src/coords.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/coords.h" ex="false" tool="3" flavor2="0">
@@ -206,6 +209,7 @@
           <incDir>
             <pElem>/usr/include</pElem>
           </incDir>
+          <commandLine>-pg</commandLine>
         </cTool>
         <ccTool>
           <developmentMode>6</developmentMode>
@@ -213,7 +217,7 @@
           <incDir>
             <pElem>/usr/include/gdal</pElem>
           </incDir>
-          <commandLine>-l gdal</commandLine>
+          <commandLine>-l gdal -pg</commandLine>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -225,7 +229,7 @@
           <linkerAddLib>
             <pElem>/usr/include/gdal</pElem>
           </linkerAddLib>
-          <commandLine>-lgdal</commandLine>
+          <commandLine>-lgdal -pg</commandLine>
         </linkerTool>
       </compileType>
       <item path="lib/clipper/Documentation/clipper.chm"
@@ -291,6 +295,8 @@
       <item path="lib/sweep/sweep_context.cc" ex="false" tool="1" flavor2="0">
       </item>
       <item path="lib/sweep/sweep_context.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/compare.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/coords.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -386,6 +392,8 @@
       <item path="lib/sweep/sweep_context.cc" ex="false" tool="1" flavor2="0">
       </item>
       <item path="lib/sweep/sweep_context.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/compare.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/coords.cpp" ex="false" tool="1" flavor2="0">
       </item>

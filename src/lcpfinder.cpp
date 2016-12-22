@@ -10,6 +10,7 @@
 #include <stdexcept>      // std::out_of_range
 #include <iomanip>
 #include <iostream>
+#include<boost/heap/fibonacci_heap.hpp>
 
 /*
  * Finds opposing by looking up intersection of the immidiate neighbours of either end of the base.
@@ -19,7 +20,10 @@
  */
 
 
+
+
 const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polygon) {
+/*
     nContainer intrsct;
     intrsct = intersection(l->getNeighbours(polygon), r->getNeighbours(polygon));
     for (nContainer::iterator it = intrsct.begin(); it != intrsct.end(); it++) {
@@ -27,6 +31,31 @@ const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polyg
             return *it;
         }
     }
+    return 0;
+*/
+
+    std::vector<std::pair<const Coords*, double> >* ln = l->getNeighbours(polygon);
+    std::vector<std::pair<const Coords*, double>>::iterator it = l->findNeighbour(r, polygon);
+    if (it != ln->end()) {
+        auto prev = it - 1;
+        if (it == ln->begin()) {
+            prev = ln->end() - 1;
+        }
+        if (prev->first->isRight(l, r) == -1) {
+            return prev->first;
+        }
+
+        auto next = it + 1;
+        if (it == ln->end() - 1) {
+            next = ln->begin();
+        }
+        if (next->first->isRight(l, r) == -1) {
+            return next->first;
+        }
+        return 0;
+
+    }
+
 
     return 0;
 }
@@ -51,9 +80,9 @@ std::deque<Funnel> LcpFinder::initFQues(const Coords* c, int polygon, nSet*nset)
     }
 
     std::deque<Funnel> funnelQue{};
-    if (c == this->startPoint or c->linePt) {
+   // if (c == this->startPoint or c->linePt or true) {
         this->initQue(neigbours->end() - 1, neigbours->begin(), c, nset, &funnelQue);
-    }
+    //}
     for (std::vector<std::pair<const Coords*, double>>::iterator nit = neigbours->begin(); nit + 1 != neigbours->end(); nit++) {
         this->initQue(nit, nit + 1, c, nset, &funnelQue);
     }
@@ -74,11 +103,12 @@ void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neig
     std::deque<Funnel> funnelQue = this->initFQues(c, polygon, neighbours);
     std::pair<const Coords*, const Coords*> base;
     const Coords* o;
-
+    Funnel f = funnelQue.front();
     while (!funnelQue.empty()) {
         //std::cout<<"loop..."<<std::endl;
-        Funnel f = funnelQue.front();
+        f = funnelQue.front();
         funnelQue.pop_front();
+
         base = f.getBase();
         o = getOpposing(base.first, base.second, polygon);
         if (o != 0) {
@@ -105,8 +135,8 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
     if (c->linePt) {
         std::vector<std::pair <const Coords*, double>>*lineNeighbours = c->getNeighbours(-1);
         for (auto it = lineNeighbours->begin(); it != lineNeighbours->end(); it++) {
-            std::pair<nSet::iterator, bool> insert = neighbours.insert(*it);
-            if(!insert.second and insert.first->second>it->second){
+            std::pair < nSet::iterator, bool> insert = neighbours.insert(*it);
+            if (!insert.second and insert.first->second > it->second) {
                 insert.first->second = it->second;
             }
         }
@@ -127,22 +157,6 @@ double LcpFinder::toClosestEnd(const Coords* c) {
     return min * this->minFriction;
 }
 
-struct cmpr {
-    bool (*f)(const Coords*, const Coords*);
-
-    cmpr() {
-        f = &compAstar;
-    }
-
-    cmpr(bool (*comparefunction)(const Coords*, const Coords*)) {
-        f = comparefunction;
-    }
-
-    bool operator()(const Coords* x, const Coords* y) const {
-        return f(x, y);
-    }
-};
-
 std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
     if (this->startPoint == 0) {
         std::cout << "No startpoint set in finder. Is the startpoint inside any polygon?\n" << std::endl;
@@ -151,9 +165,9 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
 
     int targetsFound = 0;
     this->startPoint->setToStart(0);
-
+    /*
     bool (*compareFunction)(const Coords*, const Coords*);
-
+    
 
     if (algorithm == 0) {
         compareFunction = &compDijkstra;
@@ -161,26 +175,27 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
         compareFunction = &compAstar;
     }
     cmpr comparator{compareFunction};
+     */
+    //MinHeap<const Coords*, cmpr> minheap(comparator);
+    //MinHeap<const Coords*, cmpr> minheap(comparator);
+    boost::heap::fibonacci_heap<const Coords*, boost::heap::compare < Coords::cmpr>> minheap;
 
-    MinHeap<const Coords*, cmpr> minheap(comparator);
-
-
-
-    minheap.push(this->startPoint);
+    this->startPoint->handle = minheap.push(this->startPoint);
 
     int handled = 0;
     int old = 0;
     int total = this->coordmap.size();
-
+    int percent = total / 100;
     while (!minheap.empty()) {
 
-        int percentage = handled * 100 / total;
-        if (percentage != old) {
-            old = percentage;
+        if (handled - old > percent) {
+            int percentage = handled * 100 / total;
+            old = handled;
             std::cout << "\rSearching..." << percentage << "% done";
             fflush(stdout);
         }
         handled++;
+
         const Coords* node = minheap.top();
         //std::cout<<node->toString()<<std::endl;
         if (node == 0) {
@@ -209,11 +224,12 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
                 n->setToStart(d);
                 n->setToEnd(this->toClosestEnd(n));
                 n->setPred(node);
-                minheap.push(n);
+                n->handle = minheap.push(n);
             } else if (n->getToStart() > d) {
                 n->setToStart(d);
                 n->setPred(node);
-                minheap.update(); //reorders minheap after changing priority of n
+                minheap.increase(n->handle);
+                //minheap.decrease(n); //reorders minheap after changing priority of n
             }
         }
     }
@@ -341,11 +357,18 @@ void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double 
     this->frictions.push_back(friction);
     this->triangulated.push_back(false);
     this->polygons.push_back(points);
-
+    bool ext = true;
     for (std::vector<p2t::Point*> ring : points) {
+        ext = false;
         const Coords* prev = 0;
         const Coords* first = 0;
-        for (p2t::Point* point : ring) {
+        for (int i = 0; i < ring.size(); i++) {
+            p2t::Point* point;
+            if (ext) {
+                point = ring[i];
+            }else{
+                point = ring[ring.size()-1-i];
+            }
             std::pair < std::tr1::unordered_set<Coords>::iterator, bool> p = coordmap.insert(Coords(point->x, point->y, polygon, false));
             if (!p.second) {
                 p.first->addToPolygon(polygon);
@@ -362,7 +385,7 @@ void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double 
 
         }
         prev->addNeighbours(first, polygon, friction);
-        first->addNeighbours(prev, polygon, friction);
+        first->addNeighbours(prev, polygon, friction, true);
     }
 }
 
@@ -443,7 +466,7 @@ void LcpFinder::addLine(std::vector<p2t::Point*>* points, double friction) {
         if (prev != 0) {
             c->addNeighbours(prev, -1, friction);
             prev->addNeighbours(c, -1, friction);
-           
+
         }
         prev = c;
     }

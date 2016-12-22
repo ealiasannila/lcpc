@@ -48,11 +48,11 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=
+CFLAGS=-pg
 
 # CC Compiler Flags
-CCFLAGS=-l gdal
-CXXFLAGS=-l gdal
+CCFLAGS=-l gdal -pg
+CXXFLAGS=-l gdal -pg
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -69,7 +69,7 @@ LDLIBSOPTIONS=-L/usr/include/gdal
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/least_cost_path: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/least_cost_path ${OBJECTFILES} ${LDLIBSOPTIONS} -lgdal
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/least_cost_path ${OBJECTFILES} ${LDLIBSOPTIONS} -lgdal -pg
 
 ${OBJECTDIR}/lib/clipper/cpp/clipper.o: lib/clipper/cpp/clipper.cpp 
 	${MKDIR} -p ${OBJECTDIR}/lib/clipper/cpp

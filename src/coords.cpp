@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <functional>
 
+
 Coords::Coords(double newx, double newy) {
     x = newx;
     y = newy;
@@ -88,6 +89,21 @@ void Coords::addToPolygon(int polygon) const {
     {
     }));
 
+}
+
+void Coords::addNeighbours(const Coords* c, int polygon, double friction, bool first) const {
+    try {
+        auto it = neighbours.at(polygon).begin();
+        if ((it == neighbours.at(polygon).end() or it->first != c) and (neighbours.at(polygon).empty() or c != neighbours.at(polygon).at(0).first)) {
+            neighbours.at(polygon).insert(it, std::make_pair(c, friction));
+        } else if (it->first == c and it->second > friction) {
+            std::cout << "updating friction\n";
+            it->second = friction;
+        }
+    } catch (const std::out_of_range& oor) {
+        std::cout << "trying to add neighbours to polygon where doesn't belong\n";
+        exit(1);
+    }
 }
 
 void Coords::addNeighbours(const Coords* c, int polygon, double friction) const {

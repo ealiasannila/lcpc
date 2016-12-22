@@ -4,14 +4,16 @@
  *  Created on: Aug 28, 2016
  *      Author: elias
  */
+
+#ifndef SRC_GEOMFUNC_H_
+#define SRC_GEOMFUNC_H_
 #include "../lib/poly2tri.h"
 #include "../lib/clipper/cpp/clipper.hpp"
 
 #include <gdal/ogrsf_frmts.h>
 #include "coords.h"
 #include <iostream>
-#ifndef SRC_GEOMFUNC_H_
-#define SRC_GEOMFUNC_H_
+#include "defs.h"
 
 double inline eucDistance(const Coords* p1, const Coords* p2) {
     return std::sqrt(std::pow(p1->getX() - p2->getX(), 2) + std::pow(p1->getY() - p2->getY(), 2));
@@ -25,6 +27,34 @@ double inline eucDistance(p2t::Point* p1, const Coords* p2) {
     return std::sqrt(std::pow(p1->x - p2->getX(), 2) + std::pow(p1->y - p2->getY(), 2));
 }
 
+
+static const float A = 0.983398;
+static const float B = 0.430664;
+static const float C = 0.041;
+static const float D = 0.08089;
+
+float inline approxDistance(p2t::Point* p1, const Coords* p2) {
+
+    float dx = p1->x - p2->getX();
+    float dy = p1->y - p2->getY();
+    float min, max, approx;
+    if (dx < 0) dx = -dx;
+    if (dy < 0) dy = -dy;
+
+    if (dx < dy) {
+        min = dx;
+        max = dy;
+    } else {
+        min = dy;
+        max = dx;
+    }
+    if (max > 4 * min) {
+        return max;
+    }
+    return A * max + B * min - D * max;
+
+}
+
 nContainer inline intersection(std::vector<std::pair<const Coords*, double>>*ln, std::vector<std::pair<const Coords*, double>>*rn) {
     nContainer res;
     for (auto li = ln->begin(); li != ln->end(); li++) {
@@ -36,6 +66,9 @@ nContainer inline intersection(std::vector<std::pair<const Coords*, double>>*ln,
              * */
             if (ri->first == li->first) {
                 res.push_back(ri->first);
+                if (res.size() == 2) {
+                    return res;
+                }
             }
         }
     }
@@ -145,7 +178,6 @@ bool inline pointOnSegment(p2t::Point* l1, p2t::Point* l2, p2t::Point* point) {
     }
     return true;
 }
-
 
 std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon * polygon) {
     int scale = 10000;

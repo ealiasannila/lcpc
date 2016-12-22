@@ -16,6 +16,8 @@
 #include <tr1/unordered_set>
 #include "defs.h"
 #include<limits>
+#include "compare.h"
+
 
 struct CoordsHasher {
 

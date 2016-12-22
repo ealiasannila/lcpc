@@ -12,6 +12,7 @@
 #include <map>
 #include <vector>
 
+
 class Coords;
 typedef std::vector<const Coords*> nContainer;
 typedef std::tr1::unordered_map<int, nContainer> allNContainer;
