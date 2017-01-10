@@ -10,43 +10,46 @@
 #include <iostream>
 #include <algorithm>
 
-Funnel::Funnel(const Coords* l, const Coords* a, const Coords* r) {
-    lc.push_back(a);
-    lc.push_back(l);
-    rc.push_back(a);
-    rc.push_back(r);
+Funnel::Funnel(const Coords* a, const Triangle* t) {
+    for (int i = 0; i < 3; i++) {
+        if (t->points[i] == a) {
+            this->apex = a;
+            this->base = i;
+            this->firstLeft = t->points[(i + 2) % 3];
+            this->firstRight = t->points[(i + 1) % 3];
+            this->t = t;
+            return;
+        }
+    }
 }
 
-Funnel::Funnel(std::vector<const Coords*> lc, std::vector<const Coords*> rc) {
-    this->lc = lc;
-    this->rc = rc;
+Funnel::Funnel(const Coords* fl, const Coords* fr, const Coords* a, const Triangle* t, int b) {
+    this->apex = a;
+    this->base = b;
+    this->firstLeft = fl;
+    this->firstRight = fr;
+    this->t = t;
+
 }
 
 //TODO varaudu jos deque on tyhjä tai jos törmää apexiin?
 
-std::pair<const Coords*, const Coords*> Funnel::getBase() {
-    return std::pair<const Coords*, const Coords* >(lc.back(), rc.back());
-}
-
-std::vector<const Coords*> Funnel::getLC() {
-    return lc;
-}
-
-std::vector<const Coords*> Funnel::getRC() {
-    return rc;
+const Coords* Funnel::getOpposing() {
+    const Triangle* nt = this->t->neighbours[this->base];
+    if (nt == 0) {
+        return 0;
+    }
+    for (int i = 0; i < 3; i++) {
+        if (nt->points[i] == this->t->points[(this->base + 1) % 3]) {
+            return nt->points[(i + 1) % 3];
+        }
+    }
+    return 0;
 }
 
 std::string Funnel::toString() {
     std::stringstream sstm;
-    sstm << "\nLC: ";
-    for (const Coords* c : lc) {
-        sstm << '\n' << c->toString();
-    }
-    sstm << "\nRC: ";
-    for (const Coords* c : rc) {
-        sstm << '\n' << c->toString();
-    }
-
+    sstm << "a: " << this->apex;
     return sstm.str();
 
 }
@@ -56,39 +59,29 @@ std::string Funnel::toString() {
  * so that left and right chains form two new funnels with the other chain
  * formed by apex and c.
  */
-Funnel Funnel::split(const Coords* o) {
-    std::vector<const Coords*> newlc = lc;
-    std::vector<const Coords*> newrc;
-
-    lc.clear();
-    lc.push_back(rc.front());
-    lc.push_back(o);
-    newrc.push_back(newlc.front());
-    newrc.push_back(o);
-    return Funnel(newlc, newrc);
-}
-
-/*
- * o is not inside the sector formed by fisrt segments of chains, but it is inside the funnel. In this case the funnel is shrunk
- * so that o forms the endpoint of the chain being shrunk.
- */
-void Funnel::shrink(const Coords* o, std::vector<const Coords*>* chain, unsigned lastRemaining) {
-    while (chain->size() - 1 > lastRemaining) {
-        chain->pop_back();
-    }
-    chain->push_back(o);
-}
-
-/*
- * locates the last endpoint of an edge in chain, from which's startpoint o can't be seen. (returns index of endpoint of that segment)
- */
-int Funnel::findInChain(const Coords* o, std::vector<const Coords*> chain, int side) {
-    for (unsigned i = 1; i < chain.size(); i++) {
-        if (o->isRight(chain.at(i - 1), chain.at(i)) == side) {
-            return i - 1;
+int Funnel::getNewBase(const Triangle* nt, const Coords* oldOpposing, int numOfSteps) {
+    for (int i = 0; i < 3; i++) {
+        if (nt->points[i] == oldOpposing) {
+            return (i + numOfSteps) % 3;
         }
     }
-    return -1;
+}
+
+Funnel Funnel::split() {
+    const Coords* oldOpposing = this->getOpposing();
+    const Coords* oldRight = this->firstRight;
+    const Triangle* rightTri = this->t->neighbours[this->base];
+    int rightBase;
+    if (rightTri != 0) {
+        rightBase = this->getNewBase(rightTri, oldOpposing, 1);
+    }
+    const Triangle* leftTri = this->t->neighbours[this->base];
+    if (leftTri != 0) {
+        this-> base = this->getNewBase(leftTri, oldOpposing, 2);
+        this-> t = leftTri;
+        this->firstRight = oldOpposing;
+    }
+    return Funnel(oldOpposing, oldRight, this->apex, rightTri, rightBase);
 }
 
 /*tests if o is inside first sector:
@@ -97,8 +90,8 @@ int Funnel::findInChain(const Coords* o, std::vector<const Coords*> chain, int s
  * 1 -> right
  */
 int Funnel::inFirstSector(const Coords* o) {
-    int lo = o->isRight(lc.at(0), lc.at(1));
-    int ro = o->isRight(rc.at(0), rc.at(1));
+    int lo = o->isRight(this->apex, this->firstLeft);
+    int ro = o->isRight(this->apex, this->firstRight);
 
     if (lo != 1) {
         return -1;
@@ -116,53 +109,43 @@ int Funnel::inFirstSector(const Coords* o) {
  *  2. shrinks either chain
  *  3. expands either chain
  */
-void Funnel::reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, nSet* nset, double friction) {
-    switch (this->inFirstSector(o)) {
-            int lastRemaining;
-        case 0:
-        {
-
-            //std::cout<<"CASE 0"<<std::endl;
-            //std::cout<<o->toString()<<std::endl;
-            funnelQueue->push_back(this->split(o));
-            auto res = nset->insert(std::pair<const Coords*, int>(o, friction));
+void Funnel::stepForward(std::deque<Funnel>* funnelQueue, nSet* nset, double friction) {
+    const Coords* oldOpposing = this->getOpposing();
+    if (oldOpposing == 0) {
+        return;
+    }
+    for (const Coords* interior : this->t->interiorPoints) {
+        if (inFirstSector(interior)==0) {
+            auto res = nset->insert(std::pair<const Coords*, int>(interior, friction));
             if (!res.second and res.first->second > friction) {
                 res.first->second = friction;
             }
-            break;
         }
-        case -1:
-        {
-            //std::cout<<"CASE -1"<<std::endl;
-            //if (std::find(lc.begin(), lc.end(), o) == lc.end()) {
-                ////    std::cout<<"not found yet"<<o->toString()<<std::endl;
-
-                lastRemaining = this->findInChain(o, lc, 1);
-                if (lastRemaining == -1) {
-                    lc.push_back(o);
-
-                } else {
-                    this->shrink(o, &lc, lastRemaining);
-                }
-            
-            break;
+    }
+    int inFirst = this->inFirstSector(oldOpposing);
+    if (inFirst == 0) {
+        Funnel n = this->split();
+        if (n.t != 0) {
+            funnelQueue->push_back(n);
         }
-        case 1:
-        {
-
-            //std::cout<<"CASE 1"<<std::endl;
-            //if (std::find(rc.begin(), rc.end(), o) == rc.end()) {
-                //    std::cout<<"not found yet"<<o->toString()<<std::endl;
-                lastRemaining = this->findInChain(o, rc, -1);
-                if (lastRemaining == -1) {
-                    rc.push_back(o);
-
-
-                } else {
-                    this->shrink(o, &rc, lastRemaining);
-                }
-            
-            break;
+        if (this->t != 0) {
+            funnelQueue->push_back(*this);
+        }
+        auto res = nset->insert(std::pair<const Coords*, int>(oldOpposing, friction));
+        if (!res.second and res.first->second > friction) {
+            res.first->second = friction;
+        }
+    } else {
+        int numOfSteps;
+        if (inFirst == -1) {
+            numOfSteps = 1;
+        } else {
+            numOfSteps = 2;
+        }
+        this->t = this->t->neighbours[base];
+        if (t != 0) {
+            this->base = this->getNewBase(this->t, oldOpposing, numOfSteps);
+            funnelQueue->push_back(*this);
         }
     }
 }

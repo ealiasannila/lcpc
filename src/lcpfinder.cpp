@@ -21,101 +21,78 @@
 
 
 
-
-const Coords* LcpFinder::getOpposing(const Coords* l, const Coords* r, int polygon) {
-/*
-    nContainer intrsct;
-    intrsct = intersection(l->getNeighbours(polygon), r->getNeighbours(polygon));
-    for (nContainer::iterator it = intrsct.begin(); it != intrsct.end(); it++) {
-        if (*it != 0 and (*it)->isRight(l, r) == -1) {
-            return *it;
-        }
+void insertToNset(nSet* nset, std::pair<const Coords*, double> pair) {
+    auto p = nset->insert(pair);
+    if (!p.second and p.first->second > pair.second) {
+        p.first->second = pair.second;
     }
-    return 0;
-*/
-
-    std::vector<std::pair<const Coords*, double> >* ln = l->getNeighbours(polygon);
-    std::vector<std::pair<const Coords*, double>>::iterator it = l->findNeighbour(r, polygon);
-    if (it != ln->end()) {
-        auto prev = it - 1;
-        if (it == ln->begin()) {
-            prev = ln->end() - 1;
-        }
-        if (prev->first->isRight(l, r) == -1) {
-            return prev->first;
-        }
-
-        auto next = it + 1;
-        if (it == ln->end() - 1) {
-            next = ln->begin();
-        }
-        if (next->first->isRight(l, r) == -1) {
-            return next->first;
-        }
-        return 0;
-
-    }
-
-
-    return 0;
 }
 
-void LcpFinder::initQue(std::vector<std::pair<const Coords*, double>>::iterator nit, std::vector<std::pair<const Coords*, double>>::iterator next, const Coords* c, nSet*nset, std::deque<Funnel>* funnelQue) {
-    Funnel f(nit->first, c, (next)->first);
-
-    double fric = nit->second;
-    auto p = nset->insert(std::pair<const Coords*, double>(nit->first, fric));
-    if (!p.second and p.first->second > fric) {
-        p.first->second = fric;
-    }
-    funnelQue->push_back(f);
-
+void insertToNset(nSet* nset, const Coords* c, double fric) {
+    insertToNset(nset, std::make_pair(c, fric));
 }
 
-std::deque<Funnel> LcpFinder::initFQues(const Coords* c, int polygon, nSet*nset) {
-    std::vector<std::pair<const Coords*, double>>*neigbours = c->getNeighbours(polygon);
+std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*nset) {
+    if (c == 0) {
+        std::cout << "WTF<!!" << std::endl;
+        exit(1);
+    }
     if (!this->triangulated[polygon]) {
         this->triangulate(polygon);
-        this->triangulated[polygon] = true;
     }
-
     std::deque<Funnel> funnelQue{};
-   // if (c == this->startPoint or c->linePt or true) {
-        this->initQue(neigbours->end() - 1, neigbours->begin(), c, nset, &funnelQue);
-    //}
-    for (std::vector<std::pair<const Coords*, double>>::iterator nit = neigbours->begin(); nit + 1 != neigbours->end(); nit++) {
-        this->initQue(nit, nit + 1, c, nset, &funnelQue);
+    double fric = this->frictions[polygon];
+    for (auto it = c->getTriangles(polygon)->begin(); it != c->getTriangles(polygon)->end(); it++) {
+        int ci = -1;
+        for (int i = 0; i < 3; i++) {
+            const Coords* neighbour = (*it)->points[i];
+            if (neighbour != c) {
+                insertToNset(nset, neighbour, fric);
+            }
+        }
+        funnelQue.push_back(Funnel{c, *it});
+
     }
-
-    /*
-    std::cout << "BEFORE:\n";
-    for (auto it = nset->begin(); it != nset->end(); it++) {
-        std::cout << it->first->toString();
-        std::cout << it->second << std::endl;
-    }*/
-
-
     return funnelQue;
 
 }
 
+void printTriangle2(const Triangle* t) {
+    std::cout << "Triangle : " << t << std::endl;
+    for (int i = 0; i < 3; i++) {
+        std::cout << "p: " << t->points[i]->getX() << "," << t->points[i]->getY() << std::endl;
+        std::cout << "n: " << t->neighbours[i] << std::endl;
+    }
+}
+
+void printFunnel(Funnel f) {
+    std::cout << "f: " << f.apex;
+    std::cout << "apex: " << f.getApex()->getX() << "," << f.getApex()->getY() << std::endl;
+
+    std::cout << "right: " << f.firstRight->getX() << "," << f.firstRight->getY() << std::endl;
+    std::cout << "left: " << f.firstLeft->getX() << "," << f.firstLeft->getY() << std::endl;
+    std::cout << "base: " << f.base << std::endl;
+    std::cout << "tri: ";
+    printTriangle2(f.t);
+    std::cout << std::endl;
+    if (f.getOpposing() != 0) {
+        std::cout << "opposing: " << f.getOpposing()->getX() << "," << f.getOpposing()->getY() << std::endl;
+    } else {
+        std::cout << "NO OPPOSING" << std::endl;
+    }
+}
+
 void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours) {
-    std::deque<Funnel> funnelQue = this->initFQues(c, polygon, neighbours);
+    std::deque<Funnel> funnelQue = this->initFQue(c, polygon, neighbours);
+
     std::pair<const Coords*, const Coords*> base;
     const Coords* o;
     Funnel f = funnelQue.front();
     while (!funnelQue.empty()) {
-        //std::cout<<"loop..."<<std::endl;
         f = funnelQue.front();
+        //printFunnel(f);
         funnelQue.pop_front();
-
-        base = f.getBase();
-        o = getOpposing(base.first, base.second, polygon);
-        if (o != 0) {
-            f.reactToOpposite(o, &funnelQue, neighbours, this->frictions[polygon]);
-            funnelQue.push_back(f);
-        }
-
+        f.stepForward(&funnelQue, neighbours, this->frictions[polygon]);
     }
 }
 
@@ -132,13 +109,11 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
             findNeighboursInPolygon(c, p, &neighbours);
         }
     }
+
     if (c->linePt) {
         std::vector<std::pair <const Coords*, double>>*lineNeighbours = c->getNeighbours(-1);
         for (auto it = lineNeighbours->begin(); it != lineNeighbours->end(); it++) {
-            std::pair < nSet::iterator, bool> insert = neighbours.insert(*it);
-            if (!insert.second and insert.first->second > it->second) {
-                insert.first->second = it->second;
-            }
+            insertToNset(&neighbours, *it);
         }
     }
     return neighbours;
@@ -146,8 +121,8 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
 
 double LcpFinder::toClosestEnd(const Coords* c) {
     double min = std::numeric_limits<double>::max();
-    for (std::pair<int, std::vector < p2t::Point*>> polygon : targetPoints) {
-        for (p2t::Point* target : polygon.second) {
+    for (std::pair<int, std::vector < const Coords*>> polygon : targetPoints) {
+        for (const Coords* target : polygon.second) {
             double d = eucDistance(target, c);
             if (d < min) {
                 min = d;
@@ -186,6 +161,7 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
     int old = 0;
     int total = this->coordmap.size();
     int percent = total / 100;
+
     while (!minheap.empty()) {
 
         if (handled - old > percent) {
@@ -212,6 +188,7 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
 
         minheap.pop();
         nSet neighbours = findNeighbours(node);
+
         //std::cout << node->toString() << "# of neighbours: " << neighbours.size() << std::endl;
         for (std::pair<const Coords*, int> p : neighbours) {
             const Coords* n = p.first;
@@ -233,26 +210,43 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
             }
         }
     }
-    std::deque<const Coords*> res;
-    for (std::pair<int, std::vector < p2t::Point*>> endpoints : this->targetPoints) {
-        for (p2t::Point* ep : endpoints.second) {
+
+    std::deque<const Coords*> res{};
+    for (std::pair<int, std::vector < const Coords*>> polygon : this->targetPoints) {
+
+        for (const Coords* ep : polygon.second) {
             if (ep == 0) {
                 std::cout << "EP == 0\n";
                 continue;
             }
-            if (ep->x == this->startPoint->getX() and ep->y == this->startPoint->getY()) {
+
+            if (ep == this->startPoint) {
                 continue;
             }
-            std::tr1::unordered_set<Coords>::iterator it = this->coordmap.find(Coords(ep->x, ep->y));
-            if (it != this->coordmap.end()) {
-                res.push_back(&*it);
-            }
+            res.push_back(ep);
+
         }
     }
     return res;
 }
 
+void LcpFinder::checkTargets(int polygon, Triangle* newTri) {
+    try {
+        for (const Coords* target : this->targetPoints.at(polygon)) {
+            if (target == this->startPoint) {
+                continue;
+            }
+            if (coordsInTriangle(newTri, target)) {
+                newTri->interiorPoints.push_back(target);
+            }
+        }
+    } catch (const std::out_of_range& oor) {
+    }
+}
+
 void LcpFinder::triangulate(int polygon) {
+    this->triangulated[polygon] = true;
+
     std::vector<std::vector < p2t::Point*>> points;
     try {
         points = this->polygons.at(polygon);
@@ -265,37 +259,15 @@ void LcpFinder::triangulate(int polygon) {
     for (unsigned int hole = 1; hole < points.size(); hole++) {
         cdt.AddHole(points[hole]);
     }
-    bool stp = true;
-    std::vector<p2t::Point*> steinerPoints;
-    try {
-        steinerPoints = this->targetPoints.at(polygon);
-    } catch (const std::out_of_range& oor) {
-        stp = false;
-    }
-    if (stp) {
-        for (p2t::Point* sp : steinerPoints) {
-            cdt.AddPoint(sp);
-        }
-    }
 
-    bool linepts = true;
-    std::vector<p2t::Point*> linepoints;
-    try {
-        linepoints = this->linePoints.at(polygon);
-    } catch (const std::out_of_range& oor) {
-        linepts = false;
-    }
-    if (linepts) {
-        for (p2t::Point* lp : linepoints) {
-            cdt.AddPoint(lp);
-        }
-    }
+
 
     cdt.Triangulate();
     std::vector<p2t::Triangle*> triangles = cdt.GetTriangles();
+    std::vector<Triangle*> newTriangles{};
     for (std::vector<p2t::Triangle*>::iterator it = triangles.begin(); it != triangles.end(); it++) {
         p2t::Triangle* triangle = *it;
-        const Coords * cp[3];
+        std::array<const Coords*, 3> cp;
         Coords c[3];
         for (unsigned i = 0; i < 3; i++) {
             p2t::Point* point = triangle->GetPoint(i);
@@ -303,32 +275,73 @@ void LcpFinder::triangulate(int polygon) {
         }
         // if triangle orientation is clockwise turn it to CCW
         if (c[0].isRight(&c[1], &c[2]) == 1) {
+            std::cout << "CLOCKWISE\n";
             Coords tmp = c[2];
             c[2] = c[1];
             c[1] = tmp;
         }
+        /*
+        for (Coords coord : c) {
+            std::cout << coord.toString();
+        }
+        for (int i = 0; i < 3; i++) {
+            p2t::Point* p = triangle->GetPoint(i);
+            std::cout << triangle->constrained_edge[i] << std::endl;
+            std::cout << triangle->delaunay_edge[i] << std::endl;
+            std::cout << "Point: " << p->x << "," << p->y << std::endl;
+            std::cout << " neighbour " << i << std::endl;
+            if (!triangle->constrained_edge[i]) {
+                p2t::Triangle n = triangle->NeighborAcross(*p);
+                for (int j = 0; j < 3; j++) {
+                    std::cout << " " << n.GetPoint(j)->x << "," << n.GetPoint(j)->y << std::endl;
+                }
+            }
+
+        }
+         * */
         for (unsigned i = 0; i < 3; i++) {
             std::tr1::unordered_set<Coords>::iterator f = coordmap.find(c[i]);
             if (f != coordmap.end()) {
                 cp[i] = &*f;
             } else {
+                std::cout << "Triangulated point doesn't match point in coordmap. Terminating\n";
+                exit(1);
             }
         }
-        for (unsigned i = 0; i < 3; i++) {
-            int l = i - 1;
-            int r = i + 1;
-            if (l == -1) {
-                l = 2;
-            }
-            if (r == 3) {
-                r = 0;
-            }
-
-            cp[i]->addNeighbours(cp[l], polygon, this->frictions[polygon]);
-            cp[i]->addNeighbours(cp[r], polygon, this->frictions[polygon]);
-
-
+        Triangle* t = new Triangle{};
+        t->points = cp;
+        for (int i = 0; i < 3; i++) {
+            cp[i]->addTriangle(t, polygon);
         }
+        newTriangles.push_back(t);
+    }
+    for (int i = 0; i < triangles.size(); i++) {
+        Triangle* newTri = newTriangles[i];
+        for (int n = 0; n < 3; n++) {
+            if (!triangles[i]->constrained_edge[n]) {
+                auto it = std::find(triangles.begin(), triangles.end(), triangles[i]->GetNeighbor(n));
+                if (it == triangles.end()) {
+                    std::cout << "NEIGHBOUR NOT FOUND!!" << std::endl;
+                } else {
+                    int index = std::distance(triangles.begin(), it);
+                    Triangle* newNeighbour = newTriangles.at(index);
+                    newTri->neighbours[n] = newNeighbour;
+                }
+            }
+        }
+        if (coordsInTriangle(newTri, this->startPoint)) {
+            for (int i = 0; i < 3; i++) {
+                Triangle* tri = new Triangle{};
+                tri->points[0] = this->startPoint;
+                tri->points[1] = newTri->points[i];
+                tri->points[2] = newTri->points[(i + 1) % 3];
+                tri->neighbours[0] = newTri->neighbours[(i + 2) % 3];
+                this->startPoint->addTriangle(tri, polygon);
+                this->checkTargets(polygon, tri);
+            }
+        }
+        this->checkTargets(polygon, newTri);
+
     }
 }
 
@@ -340,8 +353,8 @@ LcpFinder::~LcpFinder() {
             }
         }
     }
-    for (std::pair<int, std::vector < p2t::Point*>> polygon : targetPoints) {
-        for (p2t::Point* point : polygon.second) {
+    for (std::pair<int, std::vector <const Coords*>> polygon : targetPoints) {
+        for (const Coords* point : polygon.second) {
             delete point;
         }
     }
@@ -354,10 +367,13 @@ void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double 
     if (friction < this->minFriction) {
         minFriction = friction;
     }
+
     this->frictions.push_back(friction);
     this->triangulated.push_back(false);
     this->polygons.push_back(points);
+
     bool ext = true;
+
     for (std::vector<p2t::Point*> ring : points) {
         ext = false;
         const Coords* prev = 0;
@@ -366,8 +382,8 @@ void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double 
             p2t::Point* point;
             if (ext) {
                 point = ring[i];
-            }else{
-                point = ring[ring.size()-1-i];
+            } else {
+                point = ring[ring.size() - 1 - i];
             }
             std::pair < std::tr1::unordered_set<Coords>::iterator, bool> p = coordmap.insert(Coords(point->x, point->y, polygon, false));
             if (!p.second) {
@@ -423,20 +439,22 @@ void LcpFinder::addLine(std::vector<p2t::Point*>* line, double frictionForwards,
     }
 }
  */
-void LcpFinder::addSteinerPoint(p2t::Point* steinerpoint, int polygon) {
-
-    if (this->targetPoints.find(polygon) == this->targetPoints.end()) {
-        this->targetPoints[polygon] = std::vector<p2t::Point*>{steinerpoint};
-    } else {
-        this->targetPoints[polygon].push_back(steinerpoint);
-    }
-    std::pair < std::tr1::unordered_set<Coords>::iterator, bool> success = this->coordmap.insert(Coords(steinerpoint->x, steinerpoint->y, polygon, true));
+void LcpFinder::addTargetPoint(p2t::Point* targetpoint, int polygon) {
+    std::pair < std::tr1::unordered_set<Coords>::iterator, bool> success = this->coordmap.insert(Coords(targetpoint->x, targetpoint->y, polygon, true));
     if (!success.second) {
-        std::cout << "DID NOT INSERT steinerpoint: " << steinerpoint->x << "," << steinerpoint->y << "into polygon " << polygon << "\n";
+        std::cout << "DID NOT INSERT steinerpoint: " << targetpoint->x << "," << targetpoint->y << "into polygon " << polygon << "\n";
         std::cout << success.first->toString() << std::endl;
+        exit(1);
     } else {
         this->numOfTargets++;
     }
+    const Coords* targetCoords = &*success.first;
+    if (this->targetPoints.find(polygon) == this->targetPoints.end()) {
+        this->targetPoints[polygon] = std::vector<const Coords*>{targetCoords};
+    } else {
+        this->targetPoints[polygon].push_back(targetCoords);
+    }
+
 }
 
 const Coords* LcpFinder::addLinePoint(p2t::Point* point, int polygon) {
@@ -493,7 +511,7 @@ std::array<int, 2> LcpFinder::containingPolygon(p2t::Point* p) {
 }
 
 void LcpFinder::addStartPoint(p2t::Point* startPoint, int polygon) {
-    this->addSteinerPoint(startPoint, polygon);
+    this->addTargetPoint(startPoint, polygon);
 
     this->startPoint = & * this->coordmap.find(Coords(startPoint->x, startPoint->y));
 

@@ -13,23 +13,22 @@
 
 
 class Funnel {
-private:
-	std::vector<const Coords*> lc;
-	std::vector<const Coords*> rc;
-	void shrink(const Coords* o, std::vector<const Coords*>* chain, unsigned lastRemaining);
-	int inFirstSector(const Coords* o);
-	int findInChain(const Coords* o, std::vector<const Coords*> chain, int side);
-
 public:
-	Funnel(const Coords* l, const Coords* a, const Coords* r);
-	Funnel(std::vector<const Coords*> lc, std::vector<const Coords*> rc);
-	std::pair<const Coords*, const Coords*> getBase();
-	Funnel split(const Coords* o);
-	void reactToOpposite(const Coords* o, std::deque<Funnel>* funnelQueue, nSet* neighbours, double friction);
-	std::vector<const Coords*> getLC();
-	std::vector<const Coords*> getRC();
+	const Coords* firstLeft;
+	const Coords* firstRight;
+	const Coords* apex;
+        const Triangle* t;
+        int base;
+        int inFirstSector(const Coords* o);
+	int getNewBase(const Triangle* nt, const Coords* oldOpposing, int LeftOrRight);
+
+	Funnel(const Coords* a, const Triangle* t);
+	Funnel(const Coords* fl, const Coords* fr, const Coords* a, const Triangle* t, int b);
+        const Coords* getOpposing();
+	Funnel split();
+	void stepForward(std::deque<Funnel>* funnelQueue, nSet* neighbours, double friction);
 	std::string toString();
-	const Coords* getApex(){return lc.front();}
+	const Coords* getApex(){return this->apex;}
 	virtual ~Funnel();
 };
 

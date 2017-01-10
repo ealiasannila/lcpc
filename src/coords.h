@@ -14,12 +14,18 @@
 #include<boost/heap/fibonacci_heap.hpp>
 
 #include "compare.h"
-
+class Coords;
+struct Triangle{
+    std::array<const Coords*, 3>  points;
+    std::array<const Triangle*, 3>  neighbours;
+    std::vector<const Coords*> interiorPoints;
+};
 class Coords {
 private:
     mutable double toStart;
     mutable double toEnd;
     mutable const Coords* predecessor;
+    mutable std::map<int, std::vector<Triangle*>> triangles;
     mutable std::map<int, std::vector<std::pair<const Coords*, double>>> neighbours;
     double x;
     double y;
@@ -78,6 +84,8 @@ public:
     bool belongsToPolygon(int p) const;
     int isRight(const Coords* c1, const Coords* c2) const;
     std::vector<std::pair<const Coords*, double>>*getNeighbours(int polygon) const;
+    std::vector<Triangle*>*getTriangles(int polygon) const;
+    void addTriangle(Triangle* t, int p) const;
     std::vector<int> belongsToPolygons() const;
     void addToPolygon(int polygon) const;
     void addNeighbours(const Coords* c, int polygon, double friction) const;
@@ -85,9 +93,9 @@ public:
     std::string toString() const;
     virtual ~Coords();
 
-    
+
     //IF INTERIOR POINTS ARE NOT PART OF TRIANGULATION IT WON'T MATTER IF NEIGHBOURS ARE ORDERED!!
-    
+
     std::vector<std::pair<const Coords*, double>>::iterator findNeighbour(const Coords* n, int polygon) const {
         std::vector<std::pair<const Coords*, double>>*neigh = &this->neighbours.at(polygon);
         auto it = std::lower_bound(neigh->begin(), neigh->end(), n, std::bind(&Coords::compareNeighbours, this, std::placeholders::_1, std::placeholders::_2, polygon));
@@ -98,7 +106,7 @@ public:
     }
 
     bool compareNeighbours(std::pair<const Coords*, double> p, const Coords* c, int polygon) const {
-        
+
         const Coords* first;
         try {
             first = this->neighbours.at(polygon).at(0).first;

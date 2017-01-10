@@ -125,6 +125,15 @@ bool inline compAstar(const Coords* x, const Coords* y) {
 
 }
 
+bool inline coordsInTriangle(Triangle* t, const Coords* c) {
+    for (int i = 0; i < 3; i++) {
+        if (c->isRight(t->points[i], t->points[(i + 1) % 3]) == 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool inline inside(std::vector<std::vector<p2t::Point*>> polygon, p2t::Point* point) {
     bool exterior = true;
     for (std::vector<p2t::Point*> ring : polygon) {

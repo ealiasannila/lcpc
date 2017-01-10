@@ -54,6 +54,13 @@ Coords::Coords() {
     this->target = false;
     this->linePt = false;
 }
+std::vector<Triangle*>*Coords::getTriangles(int polygon) const {
+    return &(this->triangles.at(polygon));
+}
+
+void Coords::addTriangle(Triangle* t, int p) const{
+    this->triangles.at(p).push_back(t);
+}
 
 std::vector<std::pair<const Coords*, double>>*Coords::getNeighbours(int polygon) const {
     try {
@@ -84,7 +91,7 @@ bool Coords::belongsToPolygon(int p) const {
 }
 
 void Coords::addToPolygon(int polygon) const {
-
+    this->triangles.insert(std::make_pair(polygon, std::vector<Triangle*>{}));
     this->neighbours.insert(std::make_pair(polygon, std::vector<std::pair<const Coords*, double>>
     {
     }));

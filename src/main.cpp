@@ -30,7 +30,7 @@ bool fileExists(const std::string& name) {
 }
 
 void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
-
+    std::set<Triangle*> used;
     //finder->triangulate(polygon);
     std::tr1::unordered_set<Coords, CoordsHasher>* cm = finder->getCoordmap();
 
@@ -49,7 +49,7 @@ void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
     OGRLayer *layer;
     OGRSpatialReference sr;
     sr.importFromEPSG(3047);
-    layer = pointDS->CreateLayer("polygon", &sr, wkbLineString, NULL);
+    layer = pointDS->CreateLayer("polygon", &sr, wkbPolygon, NULL);
     if (layer == NULL) {
         printf("Point layer creation failed.\n");
         exit(1);
@@ -65,14 +65,19 @@ void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
     for (auto it = cm->begin(); it != cm->end(); it++) {
         const Coords c = *it;
         if (c.belongsToPolygon(polygon)) {
-            for (auto p = c.getNeighbours(polygon)->begin(); p != c.getNeighbours(polygon)->end(); p++) {
+            for (auto p = c.getTriangles(polygon)->begin(); p != c.getTriangles(polygon)->end(); p++) {
                 OGRFeature *feature;
                 feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
-                OGRLineString line{};
-                line.addPoint(c.getX(), c.getY());
-                line.addPoint(p->first->getX(), p->first->getY());
-                feature->SetField("polygon", p->second);
-                feature->SetGeometry(&line);
+                OGRPolygon polygon{};
+                OGRLinearRing ring{};
+                if (used.find(*p) == used.end()) {
+                    for (int i = 2; i >= 0; i--) {
+                        ring.addPoint((*p)->points[i]->getX(), (*p)->points[i]->getY());
+                    }
+                    used.insert(*p);
+                }
+                polygon.addRing(&ring);
+                feature->SetGeometry(&polygon);
                 if (layer->CreateFeature(feature) != OGRERR_NONE) {
                     printf("Failed to create feature in shapefile.\n");
                     exit(1);
@@ -447,7 +452,7 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
                 for (int i = 0; i < targetOGRPoints.size(); i++) {
                     p2t::Point* targetp2t = new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY());
                     if (inside(polygon, targetp2t)) {
-                        finder->addSteinerPoint(targetp2t, pIdx);
+                        finder->addTargetPoint(targetp2t, pIdx);
                     } else {
                         delete targetp2t;
                     }
@@ -844,9 +849,47 @@ void printFinder(LcpFinder* finder) {
     std::cout << finder->getCoordmap()->size() << std::endl;
 }
 
-int main(int argc, char* argv[]) {
-    
+void printTriangle(p2t::Triangle* t) {
+    std::cout << "Triangle at " << t << "\n";
+    if (t != 0) {
+        for (int i = 0; i < 3; i++) {
+            std::cout << t->GetPoint(i)->x << "," << t->GetPoint(i)->y << std::endl;
+        }
+    } else {
+        std::cout << "NULL\n";
+    }
+}
 
+void printTriangle(Triangle* t) {
+    std::cout << "Triangle : " << t << std::endl;
+    for (int i = 0; i < 3; i++) {
+        std::cout << "p: " << t->points[i]->getX() << "," << t->points[i]->getY() << std::endl;
+        std::cout << "n: " << t->neighbours[i] << std::endl;
+    }
+}
+
+int main(int argc, char* argv[]) {
+    EI TOIMI VIELÄ. TARGET EI LÖYDY NAAPURIKSI. KS QGIS
+    /*
+    LcpFinder f{};
+    p2t::Point* p1 = new p2t::Point{0, 0};
+    p2t::Point* p2 = new p2t::Point{1, 0};
+    p2t::Point* p3 = new p2t::Point{1, 1};
+    p2t::Point* p4 = new p2t::Point{0, 1};
+
+    std::vector<std::vector < p2t::Point*>> polygon
+    {
+        std::vector<p2t::Point*>{p1, p2, p3, p4}
+    };
+    f.addPolygon(polygon, 1);
+    
+    f.addStartPoint(new p2t::Point{0.1, 0.5}, 0);
+    f.addSteinerPoint(new p2t::Point{0.9, 0.5}, 0);
+
+    f.leastCostPath(1);
+
+    return 0;
+     */
     OGRRegisterAll();
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
         std::cout << "This program is used to search for least cost paths in polygonal costsurface for more information see: URL.\n";
@@ -921,11 +964,12 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     //saveNeighbours(&finder, "testdata/closest.shp", Coords{309242,6726833}, false);
-    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{309322,6714704}, false);
-    //saveTriangulation(&finder,"testdata/triangulation.shp", 0);
+    saveNeighbours(&finder, "testdata/neighbours.shp", Coords{338968,6717088}, false);
+    //saveTriangulation(&finder, "testdata/triangulation.shp", 0);
     //exit(0);
     begin = std::clock();
     std::deque<const Coords*> results = finder.leastCostPath(alg);
+    //std::cout<<"found: "<<results.size()<<std::endl;
     secs = double(std::clock() - begin) / CLOCKS_PER_SEC;
     std::cout << "\nSearch finished (took " << secs << "s). Writing results...\n";
 
@@ -941,9 +985,11 @@ int main(int argc, char* argv[]) {
     if (argExists("-i", argv, argc)) {
         writeOutputInvidual(results, getArgVal("-i", argv, argc), driver, sr, overwrite);
     }
+
     if (argExists("-p", argv, argc)) {
         writePoints(results, getArgVal("-p", argv, argc), driver, sr, overwrite);
     }
     std::cout << "All done!\n";
+    exit(1);
     return 0;
 }

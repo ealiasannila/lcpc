@@ -35,16 +35,15 @@ private:
     double minFriction = std::numeric_limits<double>::infinity();
     std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
-    std::map<int, std::vector<p2t::Point*>> targetPoints;
+    std::map<int, std::vector<const Coords*>> targetPoints;
     std::map<int, std::vector<p2t::Point*>> linePoints;
     std::vector<double> frictions;
     std::vector<bool> triangulated;
 
-    const Coords* getOpposing(const Coords* l, const Coords* r, int polygon);
-    std::deque<Funnel> initFQues(const Coords* c, int polygon, nSet*neighbours);
-    void initQue(std::vector<std::pair<const Coords*, double>>::iterator nit,std::vector<std::pair<const Coords*, double>>::iterator next,const Coords* c, nSet*nset, std::deque<Funnel>* funnelQue);
+    std::deque<Funnel> initFQue(const Coords* c, int polygon, nSet*neighbours);
     void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours);
     double toClosestEnd(const Coords* c);
+    void checkTargets(int polygon, Triangle* newTri);
 
 public:
     nSet findNeighbours(const Coords* c);
@@ -64,7 +63,7 @@ public:
     void addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction);
     //void addLine(std::vector<p2t::Point*>*, double frictionForwards,double frictionBackwards, std::array<int,2> polygons);
     void addStartPoint(p2t::Point* start, int polygon);
-    void addSteinerPoint(p2t::Point* steinerpoint, int polygon);
+    void addTargetPoint(p2t::Point* steinerpoint, int polygon);
     const Coords* addLinePoint(p2t::Point* linepoint, int polygon);
     void addLine(std::vector<p2t::Point*>* points, double friction);
     void triangulate(int polygon);
