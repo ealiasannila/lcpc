@@ -28,7 +28,6 @@ private:
     mutable double toEnd;
     mutable const Coords* predecessor;
     mutable std::map<int, std::vector<const Triangle*>> triangles;
-    mutable std::vector<std::pair<const Coords*, double>> linearNeighbours;
     double x;
     double y;
 
@@ -41,6 +40,7 @@ public:
      *  2 linear point
      */
     int flag = 0;
+    mutable std::vector<std::pair<const Coords*, double>> linearNeighbours;
 
     struct cmpr {
 

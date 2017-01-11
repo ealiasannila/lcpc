@@ -61,7 +61,6 @@ void Coords::addTriangle(Triangle* t, int p) const {
 std::vector<int> Coords::belongsToPolygons() const {
     std::vector<int> polygons;
     for (std::pair<int, std::vector<const Triangle*>> p : this->triangles) {
-
         polygons.push_back(p.first);
     }
     return polygons;

@@ -120,6 +120,7 @@ void Funnel::stepForward(std::deque<Funnel>* funnelQueue, nSet* nset, double fri
             }
         }
     }
+
     const Coords* oldOpposing = this->getOpposing();
     if (oldOpposing == 0) {
         //this->intermediatesAtBase(maxD, nset, friction);

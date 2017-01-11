@@ -38,7 +38,7 @@ private:
     std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
     std::map<int, std::forward_list<const Coords*>> targetPoints;
-    std::map<int, std::vector<const Coords*>> linePoints;
+    std::map<int, std::forward_list<const Coords*>> linePoints;
     std::vector<double> frictions;
     std::vector<bool> triangulated;
 
@@ -46,7 +46,8 @@ private:
     void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours);
     double toClosestEnd(const Coords* c);
     void checkTargets(int polygon, Triangle* newTri);
-
+    void checkLinear(int polygon, Triangle* newTri);
+    void subTriangles(Triangle* newTri, int polygon, const Coords* c);
 public:
     void setMaxD(double d);
     nSet findNeighbours(const Coords* c);

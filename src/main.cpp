@@ -464,7 +464,7 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
 }
 
 void readLinear(const char* linear, LcpFinder* finder, const char* FFFW, const char* FFBW, double maxd) {
-
+    
     OGRDataSource *linearDS;
     linearDS = OGRSFDriverRegistrar::Open(linear);
     if (linearDS == NULL) {
@@ -950,7 +950,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     //saveNeighbours(&finder, "testdata/closest.shp", Coords{309242,6726833}, false);
-    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{338968,6717088}, false);
+    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{313753.5,6725002.6}, false);
     //saveTriangulation(&finder, "testdata/triangulation.shp", 0);
     //exit(0);
     begin = std::clock();
