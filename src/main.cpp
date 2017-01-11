@@ -349,8 +349,7 @@ void checkCRS(OGRLayer* csLr, OGRLayer* targetLr, OGRLayer* startLr) {
 
 }
 
-void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder, const char* frictionField, std::string maxDist, OGRSpatialReference* sr) {
-    double maxd = atof(maxDist.c_str());
+void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder, const char* frictionField,  OGRSpatialReference* sr) {
     OGRDataSource *csDS;
     csDS = OGRSFDriverRegistrar::Open(costSurface);
     if (csDS == NULL) {
@@ -432,9 +431,6 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
             std::vector<std::vector<std::vector<p2t::Point*> > > sPolygons = simplify(csPolygon);
             for (std::vector<std::vector<p2t::Point*> > polygon : sPolygons) {
                 //std::cout<<"POLYGON: "<<pIdx<<"size: "<<polygon[0].size()<<std::endl;
-                if (maxd > 0 and false) {
-                    intermidiatePoints(&polygon, maxd);
-                }
                 finder->addPolygon(polygon, csFtre->GetFieldAsDouble(frictionField));
                 if (inside(polygon, startp2t)) {
                     finder->addStartPoint(startp2t, pIdx);
@@ -467,9 +463,8 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
     OGRDataSource::DestroyDataSource(targetDS);
 }
 
-void readLinear(const char* linear, LcpFinder* finder, const char* FFFW, const char* FFBW, std::string maxDist) {
+void readLinear(const char* linear, LcpFinder* finder, const char* FFFW, const char* FFBW, double maxd) {
 
-    double maxd = atof(maxDist.c_str());
     OGRDataSource *linearDS;
     linearDS = OGRSFDriverRegistrar::Open(linear);
     if (linearDS == NULL) {
@@ -934,12 +929,13 @@ int main(int argc, char* argv[]) {
         distance = getArgVal("-d", argv, argc);
     }
     LcpFinder finder{};
-    finder.setMaxD(atof(distance.c_str()));
+    double distanceVal = atof(distance.c_str());
+    finder.setMaxD(distanceVal);
     std::cout << "Reading cost surface...\n";
     OGRSpatialReference sr;
     std::clock_t begin = std::clock();
 
-    readCostSurface(argv[1], argv[2], argv[3], &finder, argv[4], distance, &sr);
+    readCostSurface(argv[1], argv[2], argv[3], &finder, argv[4], &sr);
     double secs = double(std::clock() - begin) / CLOCKS_PER_SEC;
     if (argExists("--scs", argv, argc)) {
         std::string outcs = getArgVal("--scs", argv, argc);
@@ -950,7 +946,7 @@ int main(int argc, char* argv[]) {
 
     if (argExists("-l", argv, argc)) {
         std::cout << "Reading linear\n";
-        //readLinear(getArgVal("-l", argv, argc).c_str(), &finder, getArgVal("--fwc", argv, argc).c_str(), getArgVal("--bwc", argv, argc).c_str(), distance);
+        readLinear(getArgVal("-l", argv, argc).c_str(), &finder, getArgVal("--fwc", argv, argc).c_str(), getArgVal("--bwc", argv, argc).c_str(), distanceVal);
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     //saveNeighbours(&finder, "testdata/closest.shp", Coords{309242,6726833}, false);
@@ -980,6 +976,6 @@ int main(int argc, char* argv[]) {
         writePoints(results, getArgVal("-p", argv, argc), driver, sr, overwrite);
     }
     std::cout << "All done!\n";
-    exit(1);
+    
     return 0;
 }

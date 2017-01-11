@@ -103,55 +103,6 @@ int Funnel::inFirstSector(const Coords* o) {
     return 0;
 }
 
-void Funnel::intermediatesAtBase(double maxD, nSet* nset, double friction) {
-    const Coords* baseL = this->t->points[(this->base + 1) % 3];
-    const Coords* baseR = this->t->points[(this->base + 2) % 3];
-
-    std::array<double, 2> intersectionLeft = lineIntersection(this->apex, this->firstLeft, baseL, baseR);
-    std::array<double, 2> intersectionRight = lineIntersection(this->apex, this->firstRight, baseL, baseR);
-    std::pair<int, const Triangle*> common = commonTriangle(baseL, baseR, this->t);
-
-    //CHECK IF INTERSECTION IS AT EITHER END OF BASE!
-    const Coords* epl = new Coords{intersectionLeft[0], intersectionLeft[1]};
-    const Coords* epr = new Coords{intersectionRight[0], intersectionRight[1]};
-    double d = eucDistance(epl, epr);
-    int toAdd = std::ceil(d / maxD) - 1;
-    for (int i = 1; i <= toAdd; i++) {
-        double x{((epr->getX() - epl->getX()) / (toAdd + 1)) * i + epl->getX()};
-        double y{((epr->getY() - epl->getY()) / (toAdd + 1)) * i + epl->getY()};
-
-        //delete when popping from heap in main finder function.
-        const Coords* inter = new Coords{x, y, common.first, false, 9};
-        // DO FOLLOWING ALSO FOR EPR AND EPL UNLESS THEY ARE BASE SEE ABOVE
-        int third = thirdCorner(common.second, baseL, baseR);
-        const Coords* thirdCorner = common.second->points[third];
-        inter->addToPolygon(common.first);
-
-
-        Triangle* t1 = new Triangle{};
-        t1->points[0] = inter;
-        t1->points[1] = thirdCorner;
-        t1->points[2] = baseL;
-        Triangle* t2 = new Triangle{};
-        t2->points[0] = inter;
-        t2->points[1] = baseR;
-        t2->points[2] = thirdCorner;
-
-        t1->neighbours[2] = t2;
-        t1->neighbours[0] = common.second->neighbours[(third + 2) % 3];
-
-        t1->neighbours[1] = t2;
-        t1->neighbours[0] = common.second->neighbours[(third + 2) % 3];
-
-        inter->addTriangle(t1, common.first);
-        inter->addTriangle(t2, common.first);
-        std::pair<const Coords*, int> pair {inter, friction};
-        nset->insert(pair);
-        
-    }
-
-}
-
 /*
  * Returns location of opposite node from the base of the funnel:
  * Does one of the following depending on the location of opposing vertex o:

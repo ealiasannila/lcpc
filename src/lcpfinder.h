@@ -38,7 +38,7 @@ private:
     std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
     std::map<int, std::forward_list<const Coords*>> targetPoints;
-    std::map<int, std::vector<p2t::Point*>> linePoints;
+    std::map<int, std::vector<const Coords*>> linePoints;
     std::vector<double> frictions;
     std::vector<bool> triangulated;
 

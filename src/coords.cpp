@@ -16,44 +16,30 @@
 #include <iomanip>
 #include <functional>
 
-
 Coords::Coords(double newx, double newy) {
     x = newx;
     y = newy;
     toStart = -1;
     this->predecessor = 0;
-    this->target = false;
-    this->linePt = false;
+    this->flag = -1;
 }
 
-Coords::Coords(double newx, double newy, int polygon, bool target) {
+Coords::Coords(double newx, double newy, int polygon, int flag) {
     x = newx;
     y = newy;
     toStart = -1;
     this->addToPolygon(polygon);
     this->predecessor = 0;
-    this->target = target;
-    this->linePt = false;
-}
-Coords::Coords(double newx, double newy, int polygon, bool target, int flag) {
-    x = newx;
-    y = newy;
-    toStart = -1;
-    this->addToPolygon(polygon);
-    this->predecessor = 0;
-    this->target = target;
-    this->linePt = false;
     this->flag = flag;
 }
 
-Coords::Coords(double newx, double newy, int polygon, bool target, bool linePt) {
+Coords::Coords(double newx, double newy, int polygon) {
     x = newx;
     y = newy;
     toStart = -1;
     this->addToPolygon(polygon);
     this->predecessor = 0;
-    this->target = target;
-    this->linePt = linePt;
+    this->flag = 0;
 }
 
 Coords::Coords() {
@@ -61,37 +47,21 @@ Coords::Coords() {
     x = -1;
     y = -1;
     this->predecessor = 0;
-    this->target = false;
-    this->linePt = false;
+    this->flag = -1;
 }
+
 std::vector<const Triangle*>*Coords::getTriangles(int polygon) const {
     return &(this->triangles.at(polygon));
 }
 
-void Coords::addTriangle(Triangle* t, int p) const{
+void Coords::addTriangle(Triangle* t, int p) const {
     this->triangles.at(p).push_back(t);
-}
-
-std::vector<std::pair<const Coords*, double>>*Coords::getNeighbours(int polygon) const {
-    try {
-        return &(this->neighbours.at(polygon));
-    } catch (const std::out_of_range& oor) {
-        std::cout << std::fixed << this->getX() << "," << this->getY() << std::endl;
-        std::cout << "asking neighbours from polygon where doesn't belong\n";
-        std::cout << "getting from: " << polygon << std::endl;
-        std::cout << "belongs to:";
-        for (int p : this->belongsToPolygons()) {
-            std::cout << " " << p;
-        }
-        std::cout << std::endl;
-        exit(1);
-    }
 }
 
 std::vector<int> Coords::belongsToPolygons() const {
     std::vector<int> polygons;
     for (std::pair<int, std::vector<const Triangle*>> p : this->triangles) {
-        
+
         polygons.push_back(p.first);
     }
     return polygons;
@@ -103,46 +73,10 @@ bool Coords::belongsToPolygon(int p) const {
 
 void Coords::addToPolygon(int polygon) const {
     this->triangles.insert(std::make_pair(polygon, std::vector<const Triangle*>{}));
-    this->neighbours.insert(std::make_pair(polygon, std::vector<std::pair<const Coords*, double>>
-    {
-    }));
-
 }
 
-void Coords::addNeighbours(const Coords* c, int polygon, double friction, bool first) const {
-    try {
-        auto it = neighbours.at(polygon).begin();
-        if ((it == neighbours.at(polygon).end() or it->first != c) and (neighbours.at(polygon).empty() or c != neighbours.at(polygon).at(0).first)) {
-            neighbours.at(polygon).insert(it, std::make_pair(c, friction));
-        } else if (it->first == c and it->second > friction) {
-            std::cout << "updating friction\n";
-            it->second = friction;
-        }
-    } catch (const std::out_of_range& oor) {
-        std::cout << "trying to add neighbours to polygon where doesn't belong\n";
-        exit(1);
-    }
-}
-
-void Coords::addNeighbours(const Coords* c, int polygon, double friction) const {
-    if (c->linePt) {
-        
-        std::cout<<std::fixed<<c->getX()<<","<<c->getY()<<std::endl;
-        std::cout << friction << std::endl;
-    }
-    try {
-
-        auto it = std::lower_bound(neighbours.at(polygon).begin(), neighbours.at(polygon).end(), c, std::bind(&Coords::compareNeighbours, this, std::placeholders::_1, std::placeholders::_2, polygon));
-        if ((it == neighbours.at(polygon).end() or it->first != c) and (neighbours.at(polygon).empty() or c != neighbours.at(polygon).at(0).first)) {
-            neighbours.at(polygon).insert(it, std::make_pair(c, friction));
-        } else if (it->first == c and it->second > friction) {
-            std::cout << "updating friction\n";
-            it->second = friction;
-        }
-    } catch (const std::out_of_range& oor) {
-        std::cout << "trying to add neighbours to polygon where doesn't belong\n";
-        exit(1);
-    }
+void Coords::addLinearNeighbour(const Coords* n, double friction) const{
+    this->linearNeighbours.push_back(std::make_pair(n, friction));
 }
 
 void Coords::setToStart(double cost) const {
