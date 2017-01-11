@@ -11,7 +11,6 @@
 #include "coords.h"
 #include <string>
 
-
 class Funnel {
 public:
 	const Coords* firstLeft;
@@ -20,13 +19,14 @@ public:
         const Triangle* t;
         int base;
         int inFirstSector(const Coords* o);
+        void intermediatesAtBase(double maxD, nSet* nset, double friction);
 	int getNewBase(const Triangle* nt, const Coords* oldOpposing, int LeftOrRight);
 
 	Funnel(const Coords* a, const Triangle* t);
 	Funnel(const Coords* fl, const Coords* fr, const Coords* a, const Triangle* t, int b);
         const Coords* getOpposing();
 	Funnel split();
-	void stepForward(std::deque<Funnel>* funnelQueue, nSet* neighbours, double friction);
+	void stepForward(std::deque<Funnel>* funnelQueue, nSet* neighbours, double friction, double maxD);
 	std::string toString();
 	const Coords* getApex(){return this->apex;}
 	virtual ~Funnel();

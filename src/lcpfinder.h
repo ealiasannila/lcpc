@@ -17,6 +17,7 @@
 #include "defs.h"
 #include<limits>
 #include "compare.h"
+#include <forward_list>
 
 
 struct CoordsHasher {
@@ -32,10 +33,11 @@ struct CoordsHasher {
 class LcpFinder {
 private:
     int numOfTargets = 0;
+    double maxDist = 0.0;
     double minFriction = std::numeric_limits<double>::infinity();
     std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
-    std::map<int, std::vector<const Coords*>> targetPoints;
+    std::map<int, std::forward_list<const Coords*>> targetPoints;
     std::map<int, std::vector<p2t::Point*>> linePoints;
     std::vector<double> frictions;
     std::vector<bool> triangulated;
@@ -46,6 +48,7 @@ private:
     void checkTargets(int polygon, Triangle* newTri);
 
 public:
+    void setMaxD(double d);
     nSet findNeighbours(const Coords* c);
 
     std::vector<std::vector<p2t::Point*>> getPolygon(int i) {

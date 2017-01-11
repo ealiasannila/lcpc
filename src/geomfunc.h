@@ -14,6 +14,7 @@
 #include "coords.h"
 #include <iostream>
 #include "defs.h"
+#include "lcpfinder.h"
 
 double inline eucDistance(const Coords* p1, const Coords* p2) {
     return std::sqrt(std::pow(p1->getX() - p2->getX(), 2) + std::pow(p1->getY() - p2->getY(), 2));
@@ -91,6 +92,34 @@ int inline addIntermidiatePoints(std::vector<p2t::Point*>* vec, std::vector<p2t:
     return pointsToAdd;
 }
 
+int inline thirdCorner(const Triangle* t, const Coords* c1, const Coords* c2) {
+    for (int i = 0; i < 3; i++) {
+        if (t->points[i] != c1 and t->points[i] != c2) {
+
+            return i;
+        }
+    }
+    return -1;
+}
+
+std::pair<int,const Triangle *> inline commonTriangle(const Coords* c1, const Coords* c2, const Triangle* currentTriangle) {
+    for (int nextPolygon : c1->belongsToPolygons()) {
+        if (c2->belongsToPolygon(nextPolygon)) {
+            for (auto it = c1->getTriangles(nextPolygon)->begin(); it != c1->getTriangles(nextPolygon)->end(); it++) {
+                const Triangle * t1 = *it;
+                if (t1 == currentTriangle) {
+                    continue;
+                }
+                auto it2 = std::find(c2->getTriangles(nextPolygon)->begin(), c2->getTriangles(nextPolygon)->end(), t1);
+                if (it2 != c2->getTriangles(nextPolygon)->end()) {
+
+                    return std::make_pair(nextPolygon, t1);
+                }
+            }
+        }
+    }
+}
+
 void inline intermidiatePointsForRing(std::vector<p2t::Point*>*points, double maxDist, bool isring) {
     for (unsigned int point = 0; point < points->size(); point++) {
         // add intermidiate points if next point is too far.
@@ -99,42 +128,46 @@ void inline intermidiatePointsForRing(std::vector<p2t::Point*>*points, double ma
         }
         std::vector<p2t::Point*>::iterator next = (point + 1 != points->size()) ? points->begin() + point + 1 : points->begin();
         if (eucDistance(points->at(point), *next) + 0.0000001 > maxDist) {
+
             addIntermidiatePoints(points, points->begin() + point, next, maxDist);
         }
     }
 }
 
-void inline intermidiatePoints(std::vector<std::vector<p2t::Point*>>*points, double maxDist, bool isring) {
+void inline intermidiatePoints(std::vector<std::vector < p2t::Point*>>*points, double maxDist, bool isring) {
     for (unsigned int ring = 0; ring < points->size(); ring++) {
+
         intermidiatePointsForRing(&points->at(ring), maxDist, isring);
     }
 }
 
-void inline intermidiatePoints(std::vector<std::vector<p2t::Point*>>*points, double maxDist) {
+void inline intermidiatePoints(std::vector<std::vector < p2t::Point*>>*points, double maxDist) {
+
     return intermidiatePoints(points, maxDist, true);
 }
 
-bool inline compDijkstra(const Coords* x, const Coords* y) {
+bool inline compDijkstra(const Coords* x, const Coords * y) {
 
     return (x->getToStart() > y->getToStart());
 }
 
-bool inline compAstar(const Coords* x, const Coords* y) {
+bool inline compAstar(const Coords* x, const Coords * y) {
 
     return ((x->getToStart() + x->getToEnd()) > (y->getToStart() + y->getToEnd()));
 
 }
 
-bool inline coordsInTriangle(Triangle* t, const Coords* c) {
+bool inline coordsInTriangle(Triangle* t, const Coords * c) {
     for (int i = 0; i < 3; i++) {
         if (c->isRight(t->points[i], t->points[(i + 1) % 3]) == 1) {
+
             return false;
         }
     }
     return true;
 }
 
-bool inline inside(std::vector<std::vector<p2t::Point*>> polygon, p2t::Point* point) {
+bool inline inside(std::vector<std::vector < p2t::Point*>> polygon, p2t::Point * point) {
     bool exterior = true;
     for (std::vector<p2t::Point*> ring : polygon) {
 
@@ -159,7 +192,7 @@ bool inline inside(std::vector<std::vector<p2t::Point*>> polygon, p2t::Point* po
     return true;
 }
 
-int inline Orient(p2t::Point& pa, p2t::Point& pb, p2t::Point& pc) {
+int inline Orient(p2t::Point& pa, p2t::Point& pb, p2t::Point & pc) {
     double detleft = (pa.x - pc.x) * (pb.y - pc.y);
     double detright = (pa.y - pc.y) * (pb.x - pc.x);
     double val = detleft - detright;
@@ -172,7 +205,7 @@ int inline Orient(p2t::Point& pa, p2t::Point& pb, p2t::Point& pc) {
     return 1;
 }
 
-bool inline pointOnSegment(p2t::Point* l1, p2t::Point* l2, p2t::Point* point) {
+bool inline pointOnSegment(p2t::Point* l1, p2t::Point* l2, p2t::Point * point) {
     double cross = (point->y - l1->y) * (l2->x - l1->x) - (point->x - l1->x) * (l2->y - l1->y);
     if (std::abs(cross) > 0.000001) {
         return false;
@@ -183,6 +216,7 @@ bool inline pointOnSegment(p2t::Point* l1, p2t::Point* l2, p2t::Point* point) {
     }
     double sqrd = (l2->x - l1->x)*(l2->x - l1->x) + (l2->y - l1->y)*(l2->y - l1->y);
     if (dot > sqrd) {
+
         return false;
     }
     return true;
@@ -289,6 +323,40 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
     }
     return out;
 
+}
+
+std::array<double, 2> inline lineIntersection(const Coords* l1, const Coords* l2, const Coords* b1, const Coords * b2) {
+    double slopeL = (l2->getY() - l1->getY()) / (l2->getX() - l1->getX());
+    double slopeB = (b2->getY() - b1->getY()) / (b2->getX() - b1->getX());
+    double interceptL = l1->getY() - slopeL * l1->getX();
+    double interceptB = b1->getY() - slopeB * b1->getX();
+    double x = (interceptL - interceptB) / (slopeB - slopeL);
+    double y = slopeB * x + interceptB;
+
+    if (l1->getX() == l2->getX()) {
+        x = l1->getX();
+        if (b1->getY() != b2->getY()) {
+            y = slopeB * x + interceptB;
+        }
+    } else if (l1->getY() == l2->getY()) {
+        y = l1->getY();
+        if (b1->getX() != b2->getX()) {
+            x = (y - interceptB) / slopeB;
+        }
+    }
+    if (b1->getX() == b2->getX()) {
+        x = l1->getX();
+        if (l1->getY() != l2->getY()) {
+            y = slopeL * x + interceptL;
+        }
+    } else if (b1->getY() == b2->getY()) {
+        y = b1->getY();
+        if (l1->getX() != l2->getX()) {
+
+            x = (y - interceptL) / slopeL;
+        }
+    }
+    return std::array<double, 2>{x, y};
 }
 
 std::vector<std::vector<std::vector < p2t::Point*>>> inline dumbSimplify(OGRPolygon * polygon) {

@@ -30,7 +30,7 @@ bool fileExists(const std::string& name) {
 }
 
 void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
-    std::set<Triangle*> used;
+    std::set<const Triangle*> used;
     //finder->triangulate(polygon);
     std::tr1::unordered_set<Coords, CoordsHasher>* cm = finder->getCoordmap();
 
@@ -106,17 +106,7 @@ void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f, bool useCl
     }
     nSet n{};
     if (useClosest) {
-        for (int pol : closest->belongsToPolygons()) {
-            std::cout << pol << " POL\n";
-            if (pol != -1) {
-                finder->triangulate(pol);
-            }
-            for (auto it = closest->getNeighbours(pol)->begin(); it != closest->getNeighbours(pol)->end(); it++) {
-                std::pair<const Coords*, double> p = *it;
-                std::cout << p.first->toString();
-                n.insert(p);
-            }
-        }
+
     } else {
         n = finder->findNeighbours(closest);
 
@@ -442,7 +432,7 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
             std::vector<std::vector<std::vector<p2t::Point*> > > sPolygons = simplify(csPolygon);
             for (std::vector<std::vector<p2t::Point*> > polygon : sPolygons) {
                 //std::cout<<"POLYGON: "<<pIdx<<"size: "<<polygon[0].size()<<std::endl;
-                if (maxd > 0) {
+                if (maxd > 0 and false) {
                     intermidiatePoints(&polygon, maxd);
                 }
                 finder->addPolygon(polygon, csFtre->GetFieldAsDouble(frictionField));
@@ -869,7 +859,7 @@ void printTriangle(Triangle* t) {
 }
 
 int main(int argc, char* argv[]) {
-    EI TOIMI VIELÄ. TARGET EI LÖYDY NAAPURIKSI. KS QGIS
+ 
     /*
     LcpFinder f{};
     p2t::Point* p1 = new p2t::Point{0, 0};
@@ -943,8 +933,8 @@ int main(int argc, char* argv[]) {
     if (argExists("-d", argv, argc)) {
         distance = getArgVal("-d", argv, argc);
     }
-    distance = "0";
     LcpFinder finder{};
+    finder.setMaxD(atof(distance.c_str()));
     std::cout << "Reading cost surface...\n";
     OGRSpatialReference sr;
     std::clock_t begin = std::clock();
@@ -964,7 +954,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     //saveNeighbours(&finder, "testdata/closest.shp", Coords{309242,6726833}, false);
-    saveNeighbours(&finder, "testdata/neighbours.shp", Coords{338968,6717088}, false);
+    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{338968,6717088}, false);
     //saveTriangulation(&finder, "testdata/triangulation.shp", 0);
     //exit(0);
     begin = std::clock();

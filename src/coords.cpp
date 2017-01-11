@@ -35,6 +35,16 @@ Coords::Coords(double newx, double newy, int polygon, bool target) {
     this->target = target;
     this->linePt = false;
 }
+Coords::Coords(double newx, double newy, int polygon, bool target, int flag) {
+    x = newx;
+    y = newy;
+    toStart = -1;
+    this->addToPolygon(polygon);
+    this->predecessor = 0;
+    this->target = target;
+    this->linePt = false;
+    this->flag = flag;
+}
 
 Coords::Coords(double newx, double newy, int polygon, bool target, bool linePt) {
     x = newx;
@@ -54,7 +64,7 @@ Coords::Coords() {
     this->target = false;
     this->linePt = false;
 }
-std::vector<Triangle*>*Coords::getTriangles(int polygon) const {
+std::vector<const Triangle*>*Coords::getTriangles(int polygon) const {
     return &(this->triangles.at(polygon));
 }
 
@@ -80,18 +90,19 @@ std::vector<std::pair<const Coords*, double>>*Coords::getNeighbours(int polygon)
 
 std::vector<int> Coords::belongsToPolygons() const {
     std::vector<int> polygons;
-    for (std::pair<int, std::vector<std::pair<const Coords*, double>>> p : this->neighbours) {
+    for (std::pair<int, std::vector<const Triangle*>> p : this->triangles) {
+        
         polygons.push_back(p.first);
     }
     return polygons;
 }
 
 bool Coords::belongsToPolygon(int p) const {
-    return this->neighbours.find(p) != this->neighbours.end();
+    return this->triangles.find(p) != this->triangles.end();
 }
 
 void Coords::addToPolygon(int polygon) const {
-    this->triangles.insert(std::make_pair(polygon, std::vector<Triangle*>{}));
+    this->triangles.insert(std::make_pair(polygon, std::vector<const Triangle*>{}));
     this->neighbours.insert(std::make_pair(polygon, std::vector<std::pair<const Coords*, double>>
     {
     }));

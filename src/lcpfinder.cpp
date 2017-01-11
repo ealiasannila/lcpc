@@ -32,6 +32,10 @@ void insertToNset(nSet* nset, const Coords* c, double fric) {
     insertToNset(nset, std::make_pair(c, fric));
 }
 
+void LcpFinder::setMaxD(double d) {
+    this->maxDist = d;
+}
+
 std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*nset) {
     if (c == 0) {
         std::cout << "WTF<!!" << std::endl;
@@ -58,6 +62,7 @@ std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*nset) 
 }
 
 void printTriangle2(const Triangle* t) {
+    std::cout << std::fixed;
     std::cout << "Triangle : " << t << std::endl;
     for (int i = 0; i < 3; i++) {
         std::cout << "p: " << t->points[i]->getX() << "," << t->points[i]->getY() << std::endl;
@@ -92,7 +97,7 @@ void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neig
         f = funnelQue.front();
         //printFunnel(f);
         funnelQue.pop_front();
-        f.stepForward(&funnelQue, neighbours, this->frictions[polygon]);
+        f.stepForward(&funnelQue, neighbours, this->frictions[polygon], this->maxDist);
     }
 }
 
@@ -121,7 +126,7 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
 
 double LcpFinder::toClosestEnd(const Coords* c) {
     double min = std::numeric_limits<double>::max();
-    for (std::pair<int, std::vector < const Coords*>> polygon : targetPoints) {
+    for (std::pair<int, std::forward_list < const Coords*>> polygon : targetPoints) {
         for (const Coords* target : polygon.second) {
             double d = eucDistance(target, c);
             if (d < min) {
@@ -136,6 +141,10 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
     if (this->startPoint == 0) {
         std::cout << "No startpoint set in finder. Is the startpoint inside any polygon?\n" << std::endl;
         exit(1);
+    }
+
+    for (int i = 0; i<this->polygons.size(); i++) {
+        this->triangulate(i);
     }
 
     int targetsFound = 0;
@@ -199,7 +208,7 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
             double d{node->getToStart() + eucDistance(node, n) * p.second};
             if (n->getToStart() < 0) { // node has not yet been inserted into minheap
                 n->setToStart(d);
-                n->setToEnd(this->toClosestEnd(n));
+                //n->setToEnd(this->toClosestEnd(n));
                 n->setPred(node);
                 n->handle = minheap.push(n);
             } else if (n->getToStart() > d) {
@@ -209,10 +218,11 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
                 //minheap.decrease(n); //reorders minheap after changing priority of n
             }
         }
+
     }
 
     std::deque<const Coords*> res{};
-    for (std::pair<int, std::vector < const Coords*>> polygon : this->targetPoints) {
+    for (std::pair<int, std::forward_list < const Coords*>> polygon : this->targetPoints) {
 
         for (const Coords* ep : polygon.second) {
             if (ep == 0) {
@@ -230,14 +240,26 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
     return res;
 }
 
-void LcpFinder::checkTargets(int polygon, Triangle* newTri) {
+void LcpFinder::checkTargets(int polygon, Triangle * newTri) {
     try {
-        for (const Coords* target : this->targetPoints.at(polygon)) {
-            if (target == this->startPoint) {
-                continue;
-            }
+        std::forward_list<const Coords*>::const_iterator prev;
+        for (auto it = this->targetPoints.at(polygon).cbegin(); it != this->targetPoints.at(polygon).cend();) {
+
+            const Coords* target = *it;
+
+
             if (coordsInTriangle(newTri, target)) {
                 newTri->interiorPoints.push_back(target);
+                if (it == this->targetPoints.at(polygon).cbegin()) {
+                    this->targetPoints.at(polygon).pop_front();
+                    it = this->targetPoints.at(polygon).cbegin();
+                } else {
+                    it = this->targetPoints.at(polygon).erase_after(prev);
+                }
+                this->targetPoints[-1].push_front(target);
+            } else {
+                prev = it;
+                ++it;
             }
         }
     } catch (const std::out_of_range& oor) {
@@ -245,6 +267,9 @@ void LcpFinder::checkTargets(int polygon, Triangle* newTri) {
 }
 
 void LcpFinder::triangulate(int polygon) {
+    if (this->triangulated[polygon]) {
+        return;
+    }
     this->triangulated[polygon] = true;
 
     std::vector<std::vector < p2t::Point*>> points;
@@ -280,25 +305,7 @@ void LcpFinder::triangulate(int polygon) {
             c[2] = c[1];
             c[1] = tmp;
         }
-        /*
-        for (Coords coord : c) {
-            std::cout << coord.toString();
-        }
-        for (int i = 0; i < 3; i++) {
-            p2t::Point* p = triangle->GetPoint(i);
-            std::cout << triangle->constrained_edge[i] << std::endl;
-            std::cout << triangle->delaunay_edge[i] << std::endl;
-            std::cout << "Point: " << p->x << "," << p->y << std::endl;
-            std::cout << " neighbour " << i << std::endl;
-            if (!triangle->constrained_edge[i]) {
-                p2t::Triangle n = triangle->NeighborAcross(*p);
-                for (int j = 0; j < 3; j++) {
-                    std::cout << " " << n.GetPoint(j)->x << "," << n.GetPoint(j)->y << std::endl;
-                }
-            }
 
-        }
-         * */
         for (unsigned i = 0; i < 3; i++) {
             std::tr1::unordered_set<Coords>::iterator f = coordmap.find(c[i]);
             if (f != coordmap.end()) {
@@ -327,6 +334,41 @@ void LcpFinder::triangulate(int polygon) {
                     Triangle* newNeighbour = newTriangles.at(index);
                     newTri->neighbours[n] = newNeighbour;
                 }
+            } else {
+                //DO THE INTERMEDIATE POINTS
+                const Coords* lb = newTri->points[(n + 2) % 3];
+                const Coords* rb = newTri->points[(n + 1) % 3];
+                double d = eucDistance(lb, rb);
+                if (d>this->maxDist) {
+                    int toAdd = std::ceil(d / this->maxDist) - 1;
+                    for (int i = 1; i <= toAdd; i++) {
+                        double x{((rb->getX() - lb->getX()) / (toAdd + 1)) * i + lb->getX()};
+                        double y{((rb->getY() - lb->getY()) / (toAdd + 1)) * i + lb->getY()};
+                        std::pair<std::tr1::unordered_set<Coords, CoordsHasher>::iterator, bool> success =  this->coordmap.insert(Coords{x, y, polygon, false});
+                        const Coords* intermediate = &*success.first;
+                        intermediate->addToPolygon(polygon);
+                        newTri->interiorPoints.push_back(intermediate);
+
+                        const Coords* thirdCorner = newTri->points[n];
+                        Triangle* t1 = new Triangle{};
+                        t1->points[0] = intermediate;
+                        t1->points[1] = thirdCorner;
+                        t1->points[2] = rb;
+                        Triangle* t2 = new Triangle{};
+                        t2->points[0] = intermediate;
+                        t2->points[1] = lb;
+                        t2->points[2] = thirdCorner;
+
+                        t1->neighbours[2] = t2;
+                        t1->neighbours[0] = newTri->neighbours[(n + 2) % 3];
+
+                        t2->neighbours[1] = t1;
+                        t2->neighbours[0] = newTri->neighbours[(n + 1) % 3];
+                        
+                        intermediate->addTriangle(t1, polygon);
+                        intermediate->addTriangle(t2, polygon);
+                    }
+                }
             }
         }
         if (coordsInTriangle(newTri, this->startPoint)) {
@@ -353,7 +395,7 @@ LcpFinder::~LcpFinder() {
             }
         }
     }
-    for (std::pair<int, std::vector <const Coords*>> polygon : targetPoints) {
+    for (std::pair<int, std::forward_list <const Coords*>> polygon : targetPoints) {
         for (const Coords* point : polygon.second) {
             delete point;
         }
@@ -361,7 +403,7 @@ LcpFinder::~LcpFinder() {
 
 }
 
-void LcpFinder::addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction) {
+void LcpFinder::addPolygon(std::vector<std::vector < p2t::Point*>> points, double friction) {
     //std::cout<<"adding POLYGON\n";
     int polygon = polygons.size();
     if (friction < this->minFriction) {
@@ -450,14 +492,14 @@ void LcpFinder::addTargetPoint(p2t::Point* targetpoint, int polygon) {
     }
     const Coords* targetCoords = &*success.first;
     if (this->targetPoints.find(polygon) == this->targetPoints.end()) {
-        this->targetPoints[polygon] = std::vector<const Coords*>{targetCoords};
+        this->targetPoints[polygon] = std::forward_list<const Coords*>{targetCoords};
     } else {
-        this->targetPoints[polygon].push_back(targetCoords);
+        this->targetPoints[polygon].push_front(targetCoords);
     }
 
 }
 
-const Coords* LcpFinder::addLinePoint(p2t::Point* point, int polygon) {
+const Coords * LcpFinder::addLinePoint(p2t::Point* point, int polygon) {
 
     if (this->linePoints.find(polygon) == this->linePoints.end()) {
         this->linePoints[polygon] = std::vector<p2t::Point*>{point};
@@ -494,7 +536,7 @@ void LcpFinder::addLine(std::vector<p2t::Point*>* points, double friction) {
  * Returns at most two polygons inside which a point is.
  */
 
-std::array<int, 2> LcpFinder::containingPolygon(p2t::Point* p) {
+std::array<int, 2> LcpFinder::containingPolygon(p2t::Point * p) {
     std::array<int, 2>res{-1, -1};
     int found = 0;
     for (int i = 0; i<this->polygons.size(); i++) {
@@ -511,8 +553,7 @@ std::array<int, 2> LcpFinder::containingPolygon(p2t::Point* p) {
 }
 
 void LcpFinder::addStartPoint(p2t::Point* startPoint, int polygon) {
-    this->addTargetPoint(startPoint, polygon);
-
-    this->startPoint = & * this->coordmap.find(Coords(startPoint->x, startPoint->y));
+    std::pair < std::tr1::unordered_set<Coords>::iterator, bool> success = this->coordmap.insert(Coords(startPoint->x, startPoint->y, polygon, true));
+    this->startPoint = & * success.first;
 
 }

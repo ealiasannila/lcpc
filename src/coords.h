@@ -25,7 +25,7 @@ private:
     mutable double toStart;
     mutable double toEnd;
     mutable const Coords* predecessor;
-    mutable std::map<int, std::vector<Triangle*>> triangles;
+    mutable std::map<int, std::vector<const Triangle*>> triangles;
     mutable std::map<int, std::vector<std::pair<const Coords*, double>>> neighbours;
     double x;
     double y;
@@ -47,15 +47,18 @@ public:
         }
          */
         bool operator()(const Coords* x, const Coords* y) const {
-            return (x->getToStart() + x->getToEnd() > y->getToStart() + y->getToEnd());
+            //return (x->getToStart() + x->getToEnd() > y->getToStart() + y->getToEnd());
+            return (x->getToStart()  > y->getToStart() );
         }
     };
     mutable boost::heap::fibonacci_heap<const Coords*, boost::heap::compare<cmpr>>::handle_type handle;
+    int flag = 0;
     bool target;
     bool linePt;
     Coords();
     Coords(double x, double y);
     Coords(double x, double y, int polygon, bool target);
+    Coords(double x, double y, int polygon, bool target, int flag);
     Coords(double x, double y, int polygon, bool target, bool linePt);
 
     double getX() const {
@@ -84,7 +87,7 @@ public:
     bool belongsToPolygon(int p) const;
     int isRight(const Coords* c1, const Coords* c2) const;
     std::vector<std::pair<const Coords*, double>>*getNeighbours(int polygon) const;
-    std::vector<Triangle*>*getTriangles(int polygon) const;
+    std::vector<const Triangle*>*getTriangles(int polygon) const;
     void addTriangle(Triangle* t, int p) const;
     std::vector<int> belongsToPolygons() const;
     void addToPolygon(int polygon) const;
