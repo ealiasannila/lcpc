@@ -349,7 +349,7 @@ void checkCRS(OGRLayer* csLr, OGRLayer* targetLr, OGRLayer* startLr) {
 
 }
 
-void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder, const char* frictionField,  OGRSpatialReference* sr) {
+void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder, const char* frictionField, OGRSpatialReference* sr) {
     OGRDataSource *csDS;
     csDS = OGRSFDriverRegistrar::Open(costSurface);
     if (csDS == NULL) {
@@ -463,8 +463,8 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
     OGRDataSource::DestroyDataSource(targetDS);
 }
 
-void readLinear(const char* linear, LcpFinder* finder, const char* FFFW, const char* FFBW, double maxd) {
-    
+void readLinear(const char* linear, LcpFinder* finder, const char* FFFW, const char* FFBW, const char* FFC, double maxd) {
+
     OGRDataSource *linearDS;
     linearDS = OGRSFDriverRegistrar::Open(linear);
     if (linearDS == NULL) {
@@ -488,7 +488,7 @@ void readLinear(const char* linear, LcpFinder* finder, const char* FFFW, const c
             if (maxd > 0) {
                 intermidiatePointsForRing(&linep2t, maxd, false);
             }
-            finder->addLine(&linep2t, linearFtre->GetFieldAsDouble(FFFW));
+            finder->addLine(&linep2t, linearFtre->GetFieldAsDouble(FFFW), linearFtre->GetFieldAsDouble(FFC));
 
 
 
@@ -854,7 +854,7 @@ void printTriangle(Triangle* t) {
 }
 
 int main(int argc, char* argv[]) {
- 
+
     /*
     LcpFinder f{};
     p2t::Point* p1 = new p2t::Point{0, 0};
@@ -930,6 +930,7 @@ int main(int argc, char* argv[]) {
     }
     LcpFinder finder{};
     double distanceVal = atof(distance.c_str());
+    distanceVal = 0;
     finder.setMaxD(distanceVal);
     std::cout << "Reading cost surface...\n";
     OGRSpatialReference sr;
@@ -946,11 +947,11 @@ int main(int argc, char* argv[]) {
 
     if (argExists("-l", argv, argc)) {
         std::cout << "Reading linear\n";
-        readLinear(getArgVal("-l", argv, argc).c_str(), &finder, getArgVal("--fwc", argv, argc).c_str(), getArgVal("--bwc", argv, argc).c_str(), distanceVal);
+        readLinear(getArgVal("-l", argv, argc).c_str(), &finder, getArgVal("--fwc", argv, argc).c_str(), getArgVal("--bwc", argv, argc).c_str(), getArgVal("--cc", argv, argc).c_str(), distanceVal);
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     //saveNeighbours(&finder, "testdata/closest.shp", Coords{309242,6726833}, false);
-    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{313753.5,6725002.6}, false);
+    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{305837, 6719612}, false);
     //saveTriangulation(&finder, "testdata/triangulation.shp", 0);
     //exit(0);
     begin = std::clock();
@@ -976,6 +977,6 @@ int main(int argc, char* argv[]) {
         writePoints(results, getArgVal("-p", argv, argc), driver, sr, overwrite);
     }
     std::cout << "All done!\n";
-    
+
     return 0;
 }

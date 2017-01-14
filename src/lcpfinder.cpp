@@ -22,16 +22,7 @@
 
 
 
-void insertToNset(nSet* nset, std::pair<const Coords*, double> pair) {
-    auto p = nset->insert(pair);
-    if (!p.second and p.first->second > pair.second) {
-        p.first->second = pair.second;
-    }
-}
 
-void insertToNset(nSet* nset, const Coords* c, double fric) {
-    insertToNset(nset, std::make_pair(c, fric));
-}
 
 void LcpFinder::setMaxD(double d) {
     this->maxDist = d;
@@ -46,14 +37,14 @@ std::deque<Funnel> LcpFinder::initFQue(const Coords* c, int polygon, nSet*nset) 
         this->triangulate(polygon);
     }
     std::deque<Funnel> funnelQue{};
-    
+
     double fric = this->frictions[polygon];
     for (auto it = c->getTriangles(polygon)->begin(); it != c->getTriangles(polygon)->end(); it++) {
         int ci = -1;
         for (int i = 0; i < 3; i++) {
             const Coords* neighbour = (*it)->points[i];
             if (neighbour != c) {
-                insertToNset(nset, neighbour, fric);
+                insertToNset(nset, neighbour, fric, c);
             }
         }
         funnelQue.push_back(Funnel{c, *it});
@@ -100,6 +91,12 @@ void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* neig
         funnelQue.pop_front();
         f.stepForward(&funnelQue, neighbours, this->frictions[polygon], this->maxDist);
     }
+    if (this->fences.find(polygon) != this->fences.end()) {
+        for (auto p = neighbours->begin(); p != neighbours->end(); p++) {
+            p->second += this->checkFences(polygon, c, p->first, 0);
+        }
+    }
+
 }
 
 nSet LcpFinder::findNeighbours(const Coords* c) {
@@ -117,9 +114,9 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
     }
 
     if (c->flag == 2) {
-        for (std::pair<const Coords*, double> n : c->linearNeighbours) {
+        for (std::tuple<const Coords*, double, double> n : c->linearNeighbours) {
             //std::cout<<"linear fric: "<<n.second<<std::endl;
-            insertToNset(&nset, n);
+            insertToNset(&nset, std::get<0>(n), std::get<1>(n), c);
         }
     }
     return nset;
@@ -200,13 +197,14 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
         nSet neighbours = findNeighbours(node);
 
         //std::cout << node->toString() << "# of neighbours: " << neighbours.size() << std::endl;
-        for (std::pair<const Coords*, int> p : neighbours) {
+        for (std::pair<const Coords*, double> p : neighbours) {
             const Coords* n = p.first;
             if (n == 0) {
                 std::cout << "neighbour is 0\n";
                 exit(2);
             }
-            double d{node->getToStart() + eucDistance(node, n) * p.second};
+            double d = p.second;
+
             if (n->getToStart() < 0) { // node has not yet been inserted into minheap
                 n->setToStart(d);
                 //n->setToEnd(this->toClosestEnd(n));
@@ -239,6 +237,42 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
         }
     }
     return res;
+}
+
+double LcpFinder::checkFences(int polygon, const Coords* a, const Coords* b, int initialDirection) {
+    try {
+        double crossingCost = 0;
+        std::array<const Coords*, 2> fence = this->fences.at(polygon)[0]; //only one entry at the moment...
+
+        //std::cout << fence[0]->toString() << std::endl << fence[1]->toString() << std::endl;
+        const Coords* prev = 0;
+        for (const Coords* fp = fence[initialDirection]; fp != fence[1];) {
+            //std::cout<<fp->toString();
+            std::tuple<const Coords*, double, double> p = fp->linearNeighbours.back(); //only one neighbour per fence point at this point... change to BFS/DFS
+            const Coords* next = std::get<0>(p);
+            if (segmentCrossing(fp, next, a, b) == 1) {
+                crossingCost += std::get<2>(p);
+
+            }
+            if (a == fp and prev != 0 and next != 0) {
+                int lob = b->isRight(fp, next);
+                int rob = b->isRight(fp, prev);
+                int loap = a->getPred()->isRight(fp, next);
+                int roap = a->getPred()->isRight(fp, prev);
+
+                if (((lob == 1 and rob == -1) and (loap == -1 or roap == 1))or((loap == 1 and roap == -1) and (lob == -1 or rob == 1))) {
+                    crossingCost += std::get<2>(p);
+                }
+
+
+            }
+            prev = fp;
+            fp = next;
+        }
+        return crossingCost;
+    } catch (std::out_of_range & oor) {
+        return 0;
+    }
 }
 
 void LcpFinder::checkTargets(int polygon, Triangle * newTri) {
@@ -497,8 +531,10 @@ const Coords * LcpFinder::addLinePoint(p2t::Point* point, int polygon) {
     return c;
 }
 
-void LcpFinder::addLine(std::vector<p2t::Point*>* points, double friction) {
+void LcpFinder::addLine(std::vector<p2t::Point*>* points, double friction, double crossing) {
     const Coords* prev = 0;
+    int prevPolygon;
+    const Coords* fenceFirst;
     for (auto it = points->begin(); it != points->end(); it++) {
         p2t::Point* p = *it;
         std::array<int, 2> polygons = containingPolygon(p);
@@ -507,10 +543,21 @@ void LcpFinder::addLine(std::vector<p2t::Point*>* points, double friction) {
             addLinePoint(p, polygons[1]);
         }
         if (prev != 0) {
-            prev->addLinearNeighbour(c, friction);
+            prev->addLinearNeighbour(c, friction, crossing);
             c->addLinearNeighbour(prev, friction);
+            if (polygons[0] != prevPolygon and crossing > 0) {
+                this->fences[prevPolygon].push_back(std::array<const Coords*, 2>{fenceFirst, prev});
+                fenceFirst = c;
+                prevPolygon = polygons[0];
+            }
+        } else {
+            fenceFirst = c;
+            prevPolygon = polygons[0];
         }
         prev = c;
+    }
+    if (crossing > 0) {
+        this->fences[prevPolygon].push_back(std::array<const Coords*, 2>{fenceFirst, prev});
     }
 }
 

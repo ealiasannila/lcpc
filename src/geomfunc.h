@@ -102,7 +102,7 @@ int inline thirdCorner(const Triangle* t, const Coords* c1, const Coords* c2) {
     return -1;
 }
 
-std::pair<int,const Triangle *> inline commonTriangle(const Coords* c1, const Coords* c2, const Triangle* currentTriangle) {
+std::pair<int, const Triangle *> inline commonTriangle(const Coords* c1, const Coords* c2, const Triangle* currentTriangle) {
     for (int nextPolygon : c1->belongsToPolygons()) {
         if (c2->belongsToPolygon(nextPolygon)) {
             for (auto it = c1->getTriangles(nextPolygon)->begin(); it != c1->getTriangles(nextPolygon)->end(); it++) {
@@ -166,6 +166,35 @@ bool inline coordsInTriangle(Triangle* t, const Coords * c) {
     }
     return true;
 }
+
+/*
+ * 0 = no crossing
+ * 1 = crossing
+ * 2 = crossing at endpoint
+ */
+int inline segmentCrossing(const Coords* a1, const Coords* a2, const Coords* b1, const Coords* b2) {
+    int a1Tob = a1->isRight(b1, b2);
+    int a2Tob = a2->isRight(b1, b2);
+    int b1Toa = b1->isRight(a1, a2);
+    int b2Toa = b2->isRight(a1, a2);
+    if (a1Tob == a2Tob or b1Toa == b2Toa) {
+        return 0;
+    }
+    if (a1Tob == -1 * a2Tob and b1Toa == -1 * b2Toa) {
+        return 1;
+    }
+    return 2;
+}
+
+
+void inline insertToNset(nSet* nset, const Coords* a, double fric, const Coords* b) {
+    double cost {b->getToStart() + eucDistance(b, a) * fric};
+    auto p = nset->insert(std::make_pair(a,cost));
+    if (!p.second and p.first->second > cost) {
+        p.first->second = cost;
+    }
+}
+
 
 bool inline inside(std::vector<std::vector < p2t::Point*>> polygon, p2t::Point * point) {
     bool exterior = true;
@@ -324,6 +353,8 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
     return out;
 
 }
+
+
 
 std::array<double, 2> inline lineIntersection(const Coords* l1, const Coords* l2, const Coords* b1, const Coords * b2) {
     double slopeL = (l2->getY() - l1->getY()) / (l2->getX() - l1->getX());

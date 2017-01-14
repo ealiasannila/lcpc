@@ -75,7 +75,10 @@ void Coords::addToPolygon(int polygon) const {
 }
 
 void Coords::addLinearNeighbour(const Coords* n, double friction) const{
-    this->linearNeighbours.push_back(std::make_pair(n, friction));
+    this->linearNeighbours.push_back(std::make_tuple(n, friction,0));
+}
+void Coords::addLinearNeighbour(const Coords* n, double friction, double crossingcost) const{
+    this->linearNeighbours.push_back(std::make_tuple(n, friction, crossingcost));
 }
 
 void Coords::setToStart(double cost) const {

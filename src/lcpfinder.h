@@ -19,7 +19,6 @@
 #include "compare.h"
 #include <forward_list>
 
-
 struct CoordsHasher {
 
     std::size_t operator()(const Coords& c) const {
@@ -39,6 +38,7 @@ private:
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
     std::map<int, std::forward_list<const Coords*>> targetPoints;
     std::map<int, std::forward_list<const Coords*>> linePoints;
+    std::map<int, std::vector<std::array<const Coords*, 2>>> fences; //first and last points INSIDE polygon!
     std::vector<double> frictions;
     std::vector<bool> triangulated;
 
@@ -47,6 +47,7 @@ private:
     double toClosestEnd(const Coords* c);
     void checkTargets(int polygon, Triangle* newTri);
     void checkLinear(int polygon, Triangle* newTri);
+    double checkFences(int polygon,  const Coords* a, const Coords* b, int initialDirection);
     void subTriangles(Triangle* newTri, int polygon, const Coords* c);
 public:
     void setMaxD(double d);
@@ -69,10 +70,10 @@ public:
     void addStartPoint(p2t::Point* start, int polygon);
     void addTargetPoint(p2t::Point* steinerpoint, int polygon);
     const Coords* addLinePoint(p2t::Point* linepoint, int polygon);
-    void addLine(std::vector<p2t::Point*>* points, double friction);
+    void addLine(std::vector<p2t::Point*>* points, double friction, double crossing);
     void triangulate(int polygon);
     const Coords* startPoint;
-    std::array<int,2> containingPolygon(p2t::Point* p);
+    std::array<int, 2> containingPolygon(p2t::Point* p);
 
     ~LcpFinder();
 };

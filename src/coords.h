@@ -20,6 +20,7 @@ struct Triangle {
     std::array<const Coords*, 3> points;
     std::array<const Triangle*, 3> neighbours;
     std::vector<const Coords*> interiorPoints;
+    std::vector<std::vector<const Coords*>> fences; 
 };
 
 class Coords {
@@ -40,7 +41,7 @@ public:
      *  2 linear point
      */
     int flag = 0;
-    mutable std::vector<std::pair<const Coords*, double>> linearNeighbours;
+    mutable std::vector<std::tuple<const Coords*, double, double>> linearNeighbours;
 
     struct cmpr {
 
@@ -96,6 +97,7 @@ public:
     std::vector<int> belongsToPolygons() const;
     void addToPolygon(int polygon) const;
     void addLinearNeighbour(const Coords* n, double friction) const;
+    void addLinearNeighbour(const Coords* n, double friction, double crossingcost) const;
     std::string toString() const;
     virtual ~Coords();
 

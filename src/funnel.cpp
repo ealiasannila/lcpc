@@ -111,13 +111,10 @@ int Funnel::inFirstSector(const Coords* o) {
  *  3. expands either chain
  */
 void Funnel::stepForward(std::deque<Funnel>* funnelQueue, nSet* nset, double friction, double maxD) {
-
+    
     for (const Coords* interior : this->t->interiorPoints) {
         if (inFirstSector(interior) == 0) {
-            auto res = nset->insert(std::pair<const Coords*, int>(interior, friction));
-            if (!res.second and res.first->second > friction) {
-                res.first->second = friction;
-            }
+            insertToNset(nset, interior, friction, this->apex);
         }
     }
 
@@ -135,10 +132,8 @@ void Funnel::stepForward(std::deque<Funnel>* funnelQueue, nSet* nset, double fri
         if (this->t != 0) {
             funnelQueue->push_back(*this);
         }
-        auto res = nset->insert(std::pair<const Coords*, int>(oldOpposing, friction));
-        if (!res.second and res.first->second > friction) {
-            res.first->second = friction;
-        }
+        insertToNset(nset, oldOpposing, friction, this->apex);
+        
     } else {
         int numOfSteps;
         if (inFirst == -1) {

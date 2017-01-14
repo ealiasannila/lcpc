@@ -94,6 +94,7 @@
           <commandLine>-g -O0</commandLine>
         </cTool>
         <ccTool>
+          <developmentMode>6</developmentMode>
           <standard>11</standard>
           <commandlineTool>g++</commandlineTool>
           <incDir>
