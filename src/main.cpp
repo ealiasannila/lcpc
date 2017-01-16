@@ -233,7 +233,7 @@ void savePolygon(std::vector<std::vector<std::vector<p2t::Point*>>> polygons, st
     std::cout << "done saving\n";
 
 }
-
+/*
 void savePolygons(LcpFinder* finder, std::string outputpolygon) {
     OGRSFDriver *driver;
     OGRRegisterAll();
@@ -300,7 +300,7 @@ void savePolygons(LcpFinder* finder, std::string outputpolygon) {
     OGRDataSource::DestroyDataSource(pointDS);
     std::cout << "done saving\n";
 }
-
+*/
 bool comparePolys(OGRPolygon* ogr, std::vector<std::vector<p2t::Point*>> p2tp) {
     if (ogr->getExteriorRing()->getNumPoints() != p2tp[0].size()) {
         std::cout << "ext ring size: " << ogr->getExteriorRing()->getNumPoints() << " vs. " << p2tp[0].size() << std::endl;
@@ -941,7 +941,7 @@ int main(int argc, char* argv[]) {
     if (argExists("--scs", argv, argc)) {
         std::string outcs = getArgVal("--scs", argv, argc);
         std::cout << "Saving modified costsurface\n";
-        savePolygons(&finder, outcs);
+  //      savePolygons(&finder, outcs);
     }
     //std::cout << "saving neighburs" << std::endl;
 
@@ -951,7 +951,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     //saveNeighbours(&finder, "testdata/closest.shp", Coords{309242,6726833}, false);
-    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{305837, 6719612}, false);
+    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{306248,6719696}, false);
     //saveTriangulation(&finder, "testdata/triangulation.shp", 0);
     //exit(0);
     begin = std::clock();

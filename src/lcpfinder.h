@@ -35,10 +35,10 @@ private:
     double maxDist = 0.0;
     double minFriction = std::numeric_limits<double>::infinity();
     std::tr1::unordered_set<Coords, CoordsHasher> coordmap;
-    std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
+    std::vector<std::vector<std::vector<const Coords*>>> polygons;
     std::map<int, std::forward_list<const Coords*>> targetPoints;
     std::map<int, std::forward_list<const Coords*>> linePoints;
-    std::map<int, std::vector<std::array<const Coords*, 2>>> fences; //first and last points INSIDE polygon!
+    std::map<int, std::vector<const Coords*>> fences; //first point of a fence in polygon (either at border or first point of fence)
     std::vector<double> frictions;
     std::vector<bool> triangulated;
 
@@ -48,14 +48,12 @@ private:
     void checkTargets(int polygon, Triangle* newTri);
     void checkLinear(int polygon, Triangle* newTri);
     double checkFences(int polygon,  const Coords* a, const Coords* b, int initialDirection);
-    void subTriangles(Triangle* newTri, int polygon, const Coords* c);
+    void subTriangles(Triangle* newTri, int polygon, const Coords* c);    
+    std::vector<const Coords*> segmentPolygonIntersection(int polygon,const Coords* a, const Coords* b, int* next);
+    
 public:
     void setMaxD(double d);
     nSet findNeighbours(const Coords* c);
-
-    std::vector<std::vector<p2t::Point*>> getPolygon(int i) {
-        return this->polygons[i];
-    };
 
     int getPolygonCount() {
         return this->polygons.size();

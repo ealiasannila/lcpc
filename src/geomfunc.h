@@ -56,24 +56,18 @@ float inline approxDistance(p2t::Point* p1, const Coords* p2) {
 
 }
 
-nContainer inline intersection(std::vector<std::pair<const Coords*, double>>*ln, std::vector<std::pair<const Coords*, double>>*rn) {
-    nContainer res;
-    for (auto li = ln->begin(); li != ln->end(); li++) {
-        for (auto ri = rn->begin(); ri != rn->end(); ri++) {
-            /*
-            if (*(ri->first)>*(li->first)) {
-                break;
-            }
-             * */
-            if (ri->first == li->first) {
-                res.push_back(ri->first);
-                if (res.size() == 2) {
-                    return res;
-                }
+int inline neighbouringPolygon(const Coords* a, const Coords* b, int polygon) {
+    std::vector<int> ap = a->belongsToPolygons();
+    std::vector<int> bp = b->belongsToPolygons();
+    for (int i : ap) {
+        for (int j : bp) {
+            std::cout<<"a: "<<i<< " b: "<<j<<std::endl;
+            if (j == i and j != polygon) {
+                return j;
             }
         }
     }
-    return res;
+    return -1;
 }
 
 int inline addIntermidiatePoints(std::vector<p2t::Point*>* vec, std::vector<p2t::Point*>::iterator pit, std::vector<p2t::Point*>::iterator nextit, double maxDist) {
@@ -186,15 +180,38 @@ int inline segmentCrossing(const Coords* a1, const Coords* a2, const Coords* b1,
     return 2;
 }
 
-
 void inline insertToNset(nSet* nset, const Coords* a, double fric, const Coords* b) {
-    double cost {b->getToStart() + eucDistance(b, a) * fric};
-    auto p = nset->insert(std::make_pair(a,cost));
+    double cost{b->getToStart() + eucDistance(b, a) * fric};
+    auto p = nset->insert(std::make_pair(a, cost));
     if (!p.second and p.first->second > cost) {
         p.first->second = cost;
     }
 }
 
+bool inline inside(std::vector<std::vector <const Coords*>> polygon, p2t::Point * point) {
+    bool exterior = true;
+    for (std::vector<const Coords*> ring : polygon) {
+
+        int i, j = 0;
+        bool c = false;
+        for (i = 0, j = ring.size() - 1; i < ring.size(); j = i++) {
+            const Coords* ringPoint = ring[i];
+            const Coords* ringPoint2 = ring[j];
+            if (((ringPoint->getY() > point->y) != (ringPoint2->getY() > point->y)) &&
+                    (point->x < (ringPoint2->getX() - ringPoint->getX()) * (point->y - ringPoint->getY()) / (ringPoint2->getY() - ringPoint->getY()) + ringPoint->getX()))
+                c = !c;
+        }
+        if (exterior and !c) {
+            return false;
+        }
+        if (!exterior and c) {
+
+            return false;
+        }
+        exterior = false;
+    }
+    return true;
+}
 
 bool inline inside(std::vector<std::vector < p2t::Point*>> polygon, p2t::Point * point) {
     bool exterior = true;
@@ -353,8 +370,6 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
     return out;
 
 }
-
-
 
 std::array<double, 2> inline lineIntersection(const Coords* l1, const Coords* l2, const Coords* b1, const Coords * b2) {
     double slopeL = (l2->getY() - l1->getY()) / (l2->getX() - l1->getX());
