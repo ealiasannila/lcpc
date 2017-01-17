@@ -46,12 +46,14 @@ private:
     void findNeighboursInPolygon(const Coords* c, int polygon, nSet* neighbours);
     double toClosestEnd(const Coords* c);
     void checkTargets(int polygon, Triangle* newTri);
-    void checkLinear(int polygon, Triangle* newTri);
+    void checkLinear(int polygon, Triangle* newTri, bool subtri);
     double checkFences(int polygon,  const Coords* a, const Coords* b, int initialDirection);
     void subTriangles(Triangle* newTri, int polygon, const Coords* c);    
     std::vector<const Coords*> segmentPolygonIntersection(int polygon,const Coords* a, const Coords* b, int* next);
     
 public:
+    void addBuffers( double d);
+    void addBufferPoint(const Coords* prev, const Coords* c, const Coords* next, double d,  int polygon);
     void setMaxD(double d);
     nSet findNeighbours(const Coords* c);
 
@@ -68,6 +70,7 @@ public:
     void addStartPoint(p2t::Point* start, int polygon);
     void addTargetPoint(p2t::Point* steinerpoint, int polygon);
     const Coords* addLinePoint(p2t::Point* linepoint, int polygon);
+    const Coords* addLinePoint(std::array<double,2>, int polygon);
     void addLine(std::vector<p2t::Point*>* points, double friction, double crossing);
     void triangulate(int polygon);
     const Coords* startPoint;

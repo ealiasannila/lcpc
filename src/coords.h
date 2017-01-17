@@ -20,7 +20,6 @@ struct Triangle {
     std::array<const Coords*, 3> points;
     std::array<const Triangle*, 3> neighbours;
     std::vector<const Coords*> interiorPoints;
-    std::vector<std::vector<const Coords*>> fences; 
 };
 
 class Coords {

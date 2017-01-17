@@ -19,6 +19,9 @@
 double inline eucDistance(const Coords* p1, const Coords* p2) {
     return std::sqrt(std::pow(p1->getX() - p2->getX(), 2) + std::pow(p1->getY() - p2->getY(), 2));
 }
+double inline eucDistance(std::array<double,2> p1, std::array<double,2> p2) {
+    return std::sqrt(std::pow(p1[0] - p2[0], 2) + std::pow(p1[1] - p2[1], 2));
+}
 
 double inline eucDistance(p2t::Point* p1, p2t::Point* p2) {
     return std::sqrt(std::pow(p1->x - p2->x, 2) + std::pow(p1->y - p2->y, 2));
@@ -61,7 +64,6 @@ int inline neighbouringPolygon(const Coords* a, const Coords* b, int polygon) {
     std::vector<int> bp = b->belongsToPolygons();
     for (int i : ap) {
         for (int j : bp) {
-            std::cout<<"a: "<<i<< " b: "<<j<<std::endl;
             if (j == i and j != polygon) {
                 return j;
             }
@@ -69,6 +71,7 @@ int inline neighbouringPolygon(const Coords* a, const Coords* b, int polygon) {
     }
     return -1;
 }
+
 
 int inline addIntermidiatePoints(std::vector<p2t::Point*>* vec, std::vector<p2t::Point*>::iterator pit, std::vector<p2t::Point*>::iterator nextit, double maxDist) {
     p2t::Point* p = *pit;
@@ -180,12 +183,17 @@ int inline segmentCrossing(const Coords* a1, const Coords* a2, const Coords* b1,
     return 2;
 }
 
-void inline insertToNset(nSet* nset, const Coords* a, double fric, const Coords* b) {
-    double cost{b->getToStart() + eucDistance(b, a) * fric};
+void inline insertToNset(nSet* nset, const Coords* a, double fric, const Coords* b, double crossingCost) {
+    double cost{b->getToStart() + eucDistance(b, a) * fric + crossingCost};
     auto p = nset->insert(std::make_pair(a, cost));
     if (!p.second and p.first->second > cost) {
         p.first->second = cost;
     }
+
+}
+
+void inline insertToNset(nSet* nset, const Coords* a, double fric, const Coords* b) {
+    insertToNset(nset, a, fric, b, 0);
 }
 
 bool inline inside(std::vector<std::vector <const Coords*>> polygon, p2t::Point * point) {

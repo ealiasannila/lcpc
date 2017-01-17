@@ -855,26 +855,9 @@ void printTriangle(Triangle* t) {
 
 int main(int argc, char* argv[]) {
 
-    /*
-    LcpFinder f{};
-    p2t::Point* p1 = new p2t::Point{0, 0};
-    p2t::Point* p2 = new p2t::Point{1, 0};
-    p2t::Point* p3 = new p2t::Point{1, 1};
-    p2t::Point* p4 = new p2t::Point{0, 1};
-
-    std::vector<std::vector < p2t::Point*>> polygon
-    {
-        std::vector<p2t::Point*>{p1, p2, p3, p4}
-    };
-    f.addPolygon(polygon, 1);
     
-    f.addStartPoint(new p2t::Point{0.1, 0.5}, 0);
-    f.addSteinerPoint(new p2t::Point{0.9, 0.5}, 0);
-
-    f.leastCostPath(1);
-
-    return 0;
-     */
+   
+     
     OGRRegisterAll();
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
         std::cout << "This program is used to search for least cost paths in polygonal costsurface for more information see: URL.\n";
@@ -948,11 +931,11 @@ int main(int argc, char* argv[]) {
     if (argExists("-l", argv, argc)) {
         std::cout << "Reading linear\n";
         readLinear(getArgVal("-l", argv, argc).c_str(), &finder, getArgVal("--fwc", argv, argc).c_str(), getArgVal("--bwc", argv, argc).c_str(), getArgVal("--cc", argv, argc).c_str(), distanceVal);
+        finder.addBuffers(1);
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
-    //saveNeighbours(&finder, "testdata/closest.shp", Coords{309242,6726833}, false);
-    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{306248,6719696}, false);
-    //saveTriangulation(&finder, "testdata/triangulation.shp", 0);
+    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{305729,6719139}, false);
+    //saveTriangulation(&finder, "testdata/triangulation.shp", 2);
     //exit(0);
     begin = std::clock();
     std::deque<const Coords*> results = finder.leastCostPath(alg);
