@@ -55,7 +55,13 @@ std::vector<const Triangle*>*Coords::getTriangles(int polygon) const {
 }
 
 void Coords::addTriangle(Triangle* t, int p) const {
+    try{
     this->triangles.at(p).push_back(t);
+    }catch(const std::out_of_range& oor){
+        std::cout<<"!!"<<p<<std::endl;
+        this->toString();
+        exit(99);
+    }
 }
 
 std::vector<int> Coords::belongsToPolygons() const {
@@ -97,8 +103,11 @@ std::string Coords::toString() const {
     std::stringstream sstm;
     sstm << std::setprecision(4);
     sstm << std::fixed;
-    sstm << "xy: " << this->x << "," << this->y << std::endl;
-
+    sstm << "xy: " << this->x << "," << this->y;
+    for(int i :this->belongsToPolygons()){
+        sstm<<" "<<i;
+    }
+    sstm<< std::endl;
     return sstm.str();
 }
 

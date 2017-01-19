@@ -47,7 +47,7 @@ private:
     double toClosestEnd(const Coords* c);
     void checkTargets(int polygon, Triangle* newTri);
     void checkLinear(int polygon, Triangle* newTri, bool subtri);
-    double checkFences(int polygon,  const Coords* a, const Coords* b, int initialDirection);
+    double checkFences(int polygon,  const Coords* a, const Coords* b);
     void subTriangles(Triangle* newTri, int polygon, const Coords* c);    
     std::vector<const Coords*> segmentPolygonIntersection(int polygon,const Coords* a, const Coords* b, int* next);
     

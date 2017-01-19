@@ -450,5 +450,13 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline dumbSimplify(OGRPoly
 }
 
 
+void inline printTriangle2(const Triangle* t) {
+    std::cout << std::fixed;
+    std::cout << "Triangle : " << t << std::endl;
+    for (int i = 0; i < 3; i++) {
+        std::cout << "p: " << t->points[i]->getX() << "," << t->points[i]->getY() << std::endl;
+        std::cout << "n: " << t->neighbours[i] << std::endl;
+    }
+}
 
 #endif /* SRC_GEOMFUNC_H_ */

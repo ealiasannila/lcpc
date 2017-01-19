@@ -31,7 +31,7 @@ bool fileExists(const std::string& name) {
 
 void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
     std::set<const Triangle*> used;
-    //finder->triangulate(polygon);
+    finder->triangulate(polygon);
     std::tr1::unordered_set<Coords, CoordsHasher>* cm = finder->getCoordmap();
 
     OGRSFDriver *driver;
@@ -96,6 +96,9 @@ void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
 }
 
 void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f, bool useClosest) {
+    for(int i = 0; i<finder->getPolygonCount();i++){
+        finder->triangulate(i);
+    }
     const Coords* closest = 0;
     const Coords* c;
     for (auto it = finder->getCoordmap()->begin(); it != finder->getCoordmap()->end(); it++) {
@@ -105,12 +108,10 @@ void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f, bool useCl
         }
     }
     nSet n{};
-    if (useClosest) {
 
-    } else {
-        n = finder->findNeighbours(closest);
+    n = finder->findNeighbours(closest);
 
-    }
+
     OGRSFDriver *driver;
     OGRRegisterAll();
     driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
@@ -233,6 +234,7 @@ void savePolygon(std::vector<std::vector<std::vector<p2t::Point*>>> polygons, st
     std::cout << "done saving\n";
 
 }
+
 /*
 void savePolygons(LcpFinder* finder, std::string outputpolygon) {
     OGRSFDriver *driver;
@@ -300,7 +302,7 @@ void savePolygons(LcpFinder* finder, std::string outputpolygon) {
     OGRDataSource::DestroyDataSource(pointDS);
     std::cout << "done saving\n";
 }
-*/
+ */
 bool comparePolys(OGRPolygon* ogr, std::vector<std::vector<p2t::Point*>> p2tp) {
     if (ogr->getExteriorRing()->getNumPoints() != p2tp[0].size()) {
         std::cout << "ext ring size: " << ogr->getExteriorRing()->getNumPoints() << " vs. " << p2tp[0].size() << std::endl;
@@ -855,9 +857,9 @@ void printTriangle(Triangle* t) {
 
 int main(int argc, char* argv[]) {
 
-    
-   
-     
+
+
+
     OGRRegisterAll();
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
         std::cout << "This program is used to search for least cost paths in polygonal costsurface for more information see: URL.\n";
@@ -913,7 +915,7 @@ int main(int argc, char* argv[]) {
     }
     LcpFinder finder{};
     double distanceVal = atof(distance.c_str());
-    distanceVal = 0;
+    distanceVal = 25;
     finder.setMaxD(distanceVal);
     std::cout << "Reading cost surface...\n";
     OGRSpatialReference sr;
@@ -924,7 +926,7 @@ int main(int argc, char* argv[]) {
     if (argExists("--scs", argv, argc)) {
         std::string outcs = getArgVal("--scs", argv, argc);
         std::cout << "Saving modified costsurface\n";
-  //      savePolygons(&finder, outcs);
+        //      savePolygons(&finder, outcs);
     }
     //std::cout << "saving neighburs" << std::endl;
 
@@ -934,8 +936,8 @@ int main(int argc, char* argv[]) {
         finder.addBuffers(1);
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
-    //saveNeighbours(&finder, "testdata/neighbours.shp", Coords{305729,6719139}, false);
-    //saveTriangulation(&finder, "testdata/triangulation.shp", 2);
+    //saveNeighbours(&finder, "testdata/neighbours_2.shp", Coords{305657.3,6719670.6}, false);
+    //saveTriangulation(&finder, "testdata/triangulation.shp", 1);
     //exit(0);
     begin = std::clock();
     std::deque<const Coords*> results = finder.leastCostPath(alg);
