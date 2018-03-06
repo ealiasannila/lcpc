@@ -10,16 +10,24 @@
 #include "../lib/poly2tri.h"
 #include "../lib/clipper/cpp/clipper.hpp"
 
+
 #include <gdal/ogrsf_frmts.h>
 #include "coords.h"
 #include <iostream>
 #include "defs.h"
 #include "lcpfinder.h"
 
+#define START 0
+#define STOP 1
+#define SPLIT 2
+#define MERGE 3
+#define ORDINARY 4
+
 double inline eucDistance(const Coords* p1, const Coords* p2) {
     return std::sqrt(std::pow(p1->getX() - p2->getX(), 2) + std::pow(p1->getY() - p2->getY(), 2));
 }
-double inline eucDistance(std::array<double,2> p1, std::array<double,2> p2) {
+
+double inline eucDistance(std::array<double, 2> p1, std::array<double, 2> p2) {
     return std::sqrt(std::pow(p1[0] - p2[0], 2) + std::pow(p1[1] - p2[1], 2));
 }
 
@@ -71,7 +79,6 @@ int inline neighbouringPolygon(const Coords* a, const Coords* b, int polygon) {
     }
     return -1;
 }
-
 
 int inline addIntermidiatePoints(std::vector<p2t::Point*>* vec, std::vector<p2t::Point*>::iterator pit, std::vector<p2t::Point*>::iterator nextit, double maxDist) {
     p2t::Point* p = *pit;
@@ -221,17 +228,17 @@ bool inline inside(std::vector<std::vector <const Coords*>> polygon, p2t::Point 
     return true;
 }
 
-bool inline inside(std::vector<std::vector < p2t::Point*>> polygon, p2t::Point * point) {
+bool inline inside(std::vector<std::vector < p2t::Point>> polygon, p2t::Point point) {
     bool exterior = true;
-    for (std::vector<p2t::Point*> ring : polygon) {
+    for (std::vector<p2t::Point> ring : polygon) {
 
         int i, j = 0;
         bool c = false;
         for (i = 0, j = ring.size() - 1; i < ring.size(); j = i++) {
-            p2t::Point* ringPoint = ring[i];
-            p2t::Point* ringPoint2 = ring[j];
-            if (((ringPoint->y > point->y) != (ringPoint2->y > point->y)) &&
-                    (point->x < (ringPoint2->x - ringPoint->x) * (point->y - ringPoint->y) / (ringPoint2->y - ringPoint->y) + ringPoint->x))
+            p2t::Point ringPoint = ring[i];
+            p2t::Point ringPoint2 = ring[j];
+            if (((ringPoint.y > point.y) != (ringPoint2.y > point.y)) &&
+                    (point.x < (ringPoint2.x - ringPoint.x) * (point.y - ringPoint.y) / (ringPoint2.y - ringPoint.y) + ringPoint.x))
                 c = !c;
         }
         if (exterior and !c) {
@@ -276,7 +283,7 @@ bool inline pointOnSegment(p2t::Point* l1, p2t::Point* l2, p2t::Point * point) {
     return true;
 }
 
-std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon * polygon) {
+std::vector<std::vector<std::vector < p2t::Point>>> inline simplify(OGRPolygon * polygon) {
     int scale = 10000;
     ClipperLib::Paths paths;
     paths.push_back(ClipperLib::Path{});
@@ -295,7 +302,7 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
         }
     }
 
-    std::vector<std::vector<std::vector < p2t::Point*>>> out;
+    std::vector<std::vector<std::vector < p2t::Point>>> out;
 
 
     ClipperLib::SimplifyPolygons(paths, ClipperLib::pftEvenOdd);
@@ -306,14 +313,14 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
     for (int i = 0; i < paths.size(); i++) {
         ClipperLib::Path path = paths[i];
         if (ClipperLib::Orientation(path)) {
-            std::vector < p2t::Point*> outer;
+            std::vector < p2t::Point> outer;
             for (ClipperLib::IntPoint ip : path) {
                 if (!points.insert(std::make_pair(std::make_pair(ip.X, ip.Y), 0)).second) {
                     std::cout << "DOUBLE POINT ON OUTER\n";
                 }
-                outer.push_back(new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
+                outer.push_back(p2t::Point{(double) ip.X / scale, (double) ip.Y / scale});
             }
-            out.push_back(std::vector<std::vector < p2t::Point*>>
+            out.push_back(std::vector<std::vector < p2t::Point>>
             {
                 outer
             });
@@ -323,16 +330,13 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
     }
 
     for (unsigned int hole : holes) {
-        std::vector < p2t::Point*> inner;
+        std::vector < p2t::Point> inner;
         for (unsigned int i = 0; i < paths[hole].size(); i++) {
             ClipperLib::IntPoint ip = paths[hole].at(paths[hole].size() - 1 - i);
             auto ins = points.insert(std::make_pair(std::make_pair(ip.X, ip.Y), hole));
 
-            p2t::Point* point = new p2t::Point{(double) ip.X / scale, (double) ip.Y / scale};
+            p2t::Point point{(double) ip.X / scale, (double) ip.Y / scale};
             if (!ins.second) {
-                std::cout << "DOUBLE POINT ON RING " << ins.first->second << "\n";
-                std::cout << "Current ring: " << hole << std::endl;
-                std::cout << "xy: " << point->x << "," << point->y << std::endl;
                 int j = 1;
                 int ori = 0;
                 p2t::Point next;
@@ -352,22 +356,22 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline simplify(OGRPolygon 
                     ClipperLib::IntPoint pip = paths[hole].at(pipInd);
                     next = p2t::Point{(double) nip.X / scale, (double) nip.Y / scale};
                     prev = p2t::Point{(double) pip.X / scale, (double) pip.Y / scale};
-                    ori = Orient(prev, *point, next);
+                    ori = Orient(prev, point, next);
                 } while (ori == 0);
 
 
                 p2t::Point moved{(next.x - prev.x) / 2 + prev.x, (next.y - prev.y) / 2 + prev.y};
-                double e = eucDistance(point, &moved);
-                double dx = (moved.x - point->x) / e;
-                double dy = (moved.y - point->y) / e;
+                double e = eucDistance(&point, &moved);
+                double dx = (moved.x - point.x) / e;
+                double dy = (moved.y - point.y) / e;
 
-                point->x -= dx * ori;
-                point->y -= dy * ori;
+                point.x -= dx * ori;
+                point.y -= dy * ori;
             }
             inner.push_back(point);
         }
         unsigned int outIndex = 0;
-        for (std::vector<std::vector < p2t::Point*>> outer : out) {
+        for (std::vector<std::vector < p2t::Point >> outer : out) {
             if (inside(outer, inner[0])) {
 
                 out.at(outIndex).push_back(inner);
@@ -449,7 +453,6 @@ std::vector<std::vector<std::vector < p2t::Point*>>> inline dumbSimplify(OGRPoly
 
 }
 
-
 void inline printTriangle2(const Triangle* t) {
     std::cout << std::fixed;
     std::cout << "Triangle : " << t << std::endl;
@@ -458,5 +461,451 @@ void inline printTriangle2(const Triangle* t) {
         std::cout << "n: " << t->neighbours[i] << std::endl;
     }
 }
+
+bool inline cmpCoordsPointersByXY(const Coords* a, const Coords* b) {
+    return (a->getX() < b->getX()) or(a->getX() == b->getX() and a->getY() < b->getY());
+}
+
+int inline getType(const Coords* c, std::unordered_map<const Coords*, std::vector<const Coords*>>*neighbors) {
+    const Coords* l = neighbors->at(c)[0];
+    const Coords* r = neighbors->at(c)[1];
+
+    bool compR = cmpCoordsPointersByXY(r, c);
+    bool compL = cmpCoordsPointersByXY(l, c);
+
+    if (compL and compR) {
+        if (r->isRight(l, c) == -1) {
+            return MERGE;
+        }
+        return STOP;
+    }
+    if (!compL and !compR) {
+        if (r->isRight(l, c) == -1) {
+            return SPLIT;
+        }
+        return START;
+    }
+    return ORDINARY;
+
+
+}
+
+
+bool inline cmp(Edge a, Edge b) {
+    if (a.first->isRight(b.first, b.second) == 0 and a.second->isRight(b.first, b.second) == 0) {
+        return false;
+    }
+
+    int o1 = a.first->isRight(b.first, b.second);
+    int o2 = a.second->isRight(b.first, b.second);
+    if (o1 != -1 and o2 != -1) {
+        return true;
+    }
+    int o3 = b.first->isRight(a.first, a.second);
+    int o4 = b.second->isRight(a.first, a.second);
+    return o3 != 1 and o4 != 1;
+
+}
+
+auto inline createEdge(const Coords* a, const Coords * b) {
+    if (a == b or a == nullptr or b == nullptr) {
+        std::cout << "FUCKED UP" << std::endl;
+        exit(1);
+    }
+    if (cmpCoordsPointersByXY(a,b)) {
+        return std::make_pair(a, b);
+    }
+    return std::make_pair(b, a);
+}
+
+auto inline setItDown(Edge lower, std::map<Edge, const Coords*,bool (*)(Edge, Edge)>*edges) {
+    auto it = edges->lower_bound(lower);
+
+    if (it != edges->end() and it != edges->begin()) {
+        it--;
+    } else if (it == edges->begin()) {
+        it = edges->end();
+    }
+    return it;
+}
+auto inline leftMost (const Coords* c, const Coords * prev, std::unordered_map<const Coords*, std::vector<const Coords*>>*neighbors){
+    double maxAngle = std::numeric_limits<double>::min();
+    const Coords* leftMost = nullptr;
+
+    for (const Coords* n : neighbors->at(c)) {
+        if (n == prev) {
+            continue;
+        }
+        double x1 = c->getX() - prev->getX();
+        double y1 = c->getY() - prev->getY();
+        double x2 = c->getX() - n->getX();
+        double y2 = c->getY() - n->getY();
+
+        double dot = x1 * x2 + y1*y2;
+        double det = x1 * y2 - y1*x2;
+        double angle = atan2(det, dot);
+        if (angle < 0) {
+            angle = 2 * M_PI + angle;
+        }
+        if (angle > maxAngle) {
+            maxAngle = angle;
+            leftMost = n;
+        }
+
+    }
+    if (leftMost == nullptr) {
+        std::cout << "leftmost not found" << std::endl;
+        exit(1);
+    }
+    return leftMost;
+}
+
+auto inline addDiagonal(Edge e, std::vector<Edge>*diagonals, std::vector<Edge>*starts, std::unordered_map<const Coords*, std::vector<const Coords*>>*neighbors) {
+    int type = getType(e.first, neighbors);
+    if (type != START and type != MERGE) {
+        if (e.first->getY() > e.second->getY()) {
+            starts->push_back(e);
+        } else {
+            starts->push_back(createEdge(e.first, leftMost(e.first, e.second, neighbors)));
+        }
+
+    }
+    neighbors->at(e.first).push_back(e.second);
+    neighbors->at(e.second).push_back(e.first);
+
+    diagonals->push_back(e);
+
+
+};
+
+auto inline splitToMonotone(std::vector<std::vector<const Coords*>> polygon, std::vector<Edge>* diagonals) {
+
+    std::vector<const Coords*> combined{};
+    std::unordered_map<const Coords*, std::vector<const Coords*>> neighbors;
+
+
+    for (auto ring = polygon.begin(); ring != polygon.end(); ring++) {
+        const Coords* prev2 = ring->at(ring->size() - 2);
+        const Coords* prev1 = ring->at(ring->size() - 1);
+        for (auto c = ring->begin(); c != ring->end(); c++) {
+            neighbors.insert(std::make_pair(prev1, std::vector<const Coords*>{*c, prev2}));
+            combined.push_back(*c);
+            prev2 = prev1;
+            prev1 = *c;
+        }
+    }
+
+
+    std::sort(combined.begin(), combined.end(), cmpCoordsPointersByXY);
+    std::map<Edge, const Coords*,bool (*)(Edge, Edge) > edges(cmp);
+    std::vector<Edge> starts{};
+
+
+
+
+    //std::cout << "preliminaries" << std::endl;
+
+    for (const Coords* c : combined) {
+        int vtype = getType(c, &neighbors);
+
+        if (vtype == START) {
+            starts.push_back(createEdge(c, neighbors.at(c)[0]));
+        }
+
+        Edge le = createEdge(c, neighbors.at(c)[0]);
+        Edge re = createEdge(c, neighbors.at(c)[1]);
+        //IF vtype in split, merge, start or stop: higher = higher, if vtype is ordinary higher = righmost edge
+        Edge higher = re;
+        Edge lower = le;
+        bool orient = *(neighbors.at(c)[0]) < *(neighbors.at(c)[1]);
+
+        auto itUp = edges.end();
+        auto itDown = edges.end();
+
+
+
+
+        /*
+         Messed up section setting itUp and Down
+         */
+        if (vtype != ORDINARY) {
+            if (neighbors.at(c)[0]->getY() >= neighbors.at(c)[1]->getY()) {
+                lower = re;
+                higher = le;
+            }
+            if (vtype == SPLIT or vtype == MERGE) {
+                itUp = edges.upper_bound(higher);
+                itDown = setItDown(lower, &edges);
+            }
+        } else if (orient) {
+            lower = re;
+            higher = le;
+            itDown = setItDown(higher, &edges);
+        } else {
+            itUp = edges.upper_bound(higher);
+
+        }
+
+        //OK section setting diagonals
+        if (vtype == SPLIT) {
+            if (itUp == edges.end()) {
+                std::cout << "mysterious split.." << std::endl;
+                exit(1);
+            } else {
+                addDiagonal(createEdge(c, itUp->second),diagonals,&starts,&neighbors);
+            }
+        }
+        if (itDown != edges.end()) {
+            if (getType(itDown->second, &neighbors) == MERGE) {
+                addDiagonal(createEdge(c, itDown->second),diagonals,&starts,&neighbors);
+            }
+            edges[itDown->first] = c;
+        }
+
+        if (itUp != edges.end()) {
+            if (getType(itUp->second, &neighbors) == MERGE) {
+                addDiagonal(createEdge(c, itUp->second),diagonals,&starts,&neighbors);
+            }
+            edges[itUp->first] = c;
+        }
+
+        //OK section updating edges
+        if (vtype == SPLIT or vtype == START) {
+            edges[higher] = c;
+            edges[lower] = c;
+        } else if (vtype == STOP or vtype == MERGE) {
+            edges.erase(higher);
+            edges.erase(lower);
+        } else if (vtype == ORDINARY) {
+            edges.erase(higher);
+            edges[lower] = c;
+        }
+        //plot(c, itUp, itDown, higher, lower);
+
+    }
+    //std::cout << "for loop done" << std::endl;
+
+    std::vector<std::vector<const Coords*>> monotone
+    {
+    };
+    monotone.reserve(starts.size());
+    for (Edge e : starts) {
+        const Coords* prev = e.first;
+        const Coords* s = prev;
+        const Coords* c = e.second;
+        std::vector<const Coords*> mono{s};
+
+        while (c != s) {
+            mono.push_back(c);
+            const Coords* next = leftMost(c, prev,&neighbors);
+            prev = c;
+            c = next;
+        }
+        monotone.push_back(mono);
+    }
+    return monotone;
+}
+
+auto inline triangulateMonotone(std::vector<const Coords*> monotone, int polygonId) {
+
+    //Neighbor information could be retrieved from splitToMonotone operation at O(1)
+    std::vector<std::pair<const Coords*, int>> sorted;
+    std::map<const Coords*, const Coords*> nextAlongMonotone{};
+    sorted.reserve(monotone.size());
+    for (int i = 0; i < monotone.size(); i++) {
+        auto c = monotone[i];
+        auto r = monotone[(i - 1 + monotone.size()) % monotone.size()];
+        auto l = monotone[(i + 1) % monotone.size()];
+        nextAlongMonotone[c] = r;
+        if (*l<*c and *c<*r) {
+            sorted.push_back(std::make_pair(c, -1));
+
+        } else if (*l>*c and *c>*r) {
+            sorted.push_back(std::make_pair(c, 1));
+
+        } else {
+            sorted.push_back(std::make_pair(c, 0));
+
+        }
+    }
+
+    auto cmpCoordsPair = [](std::pair<const Coords*, int>a, std::pair<const Coords*, int> b) {
+        return cmpCoordsPointersByXY(a.first, b.first);
+    };
+    std::sort(sorted.begin(), sorted.end(), cmpCoordsPair);
+    std::vector<std::pair<const Coords*, int>> stack
+    {
+        sorted[0], sorted[1]
+    };
+
+
+    std::vector<Triangle*> triangles{};
+
+    std::set<Triangle*> triangleSet{};
+    auto targetNumberOfNeighbors = [&nextAlongMonotone](Triangle * t) {
+        int target = 3;
+        for (int i = 0; i < 3; i++) {
+            if (nextAlongMonotone[t->points[i]] == t->points[(i + 1) % 3]) {
+                target--;
+            }
+        }
+        return target;
+    };
+
+    auto trianglesAreNeighbors = [](Triangle* t1, Triangle * t2) {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (t1->points[i] == t2->points[j] and t1->points[(i + 1) % 3] == t2->points[(j + 2) % 3]) {
+
+                    t1->neighbours[(i + 2) % 3] = t2;
+                    t2->neighbours[(j + 1) % 3] = t1;
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+
+    auto neighborsFull = [targetNumberOfNeighbors](Triangle * t) {
+        int missing = 0;
+        for (auto n : t->neighbours) {
+            if (n == nullptr) {
+                missing++;
+            }
+        }
+        return targetNumberOfNeighbors(t) + missing == 3;
+    };
+
+    auto addToTriangles = [&polygonId, &triangles, &triangleSet, &trianglesAreNeighbors, &neighborsFull](std::pair<const Coords*, int>c, std::pair<const Coords*, int>k, std::pair<const Coords*, int>st) {
+        triangles.push_back(new Triangle(std::array<const Coords*, 3>{k.first, c.first, st.first}));
+        c.first->addTriangle(triangles.back(), polygonId);
+        k.first->addTriangle(triangles.back(), polygonId);
+        st.first->addTriangle(triangles.back(), polygonId);
+        int neighbors = 0;
+        for (auto n : triangleSet) {
+            if (trianglesAreNeighbors(triangles.back(), n)) {
+                neighbors++;
+                if (neighborsFull(n)) {
+                    triangleSet.erase(n);
+                }
+            }
+
+        }
+        if (neighbors < 2) {
+            triangleSet.insert(triangles.back());
+        }
+
+
+        //        plot(c.first, k.first, st.first);
+
+    };
+
+    for (int i = 2; i < sorted.size(); i++) {
+        auto c = sorted[i];
+        auto top = stack.back();
+        if (top.second == c.second) {//top and c in same chain
+            auto k = top;
+            stack.pop_back();
+            while (!stack.empty() and stack.back().first->isRight(c.first, k.first) == c.second) {
+                if (c.second == 1) {
+                    addToTriangles(c, k, stack.back());
+                } else {
+                    addToTriangles(k, c, stack.back());
+                }
+                k = stack.back();
+                stack.pop_back();
+            }
+            stack.push_back(k);
+            stack.push_back(c);
+        } else {
+            while (!stack.empty()) {
+                auto k = stack.back();
+                stack.pop_back();
+                if (!stack.empty()) {
+                    if (k.second == 1) {
+
+                        addToTriangles(c, k, stack.back());
+                    } else {
+
+                        addToTriangles(k, c, stack.back());
+
+                    }
+                }
+            }
+            stack.push_back(top);
+            stack.push_back(c);
+
+        }
+    }
+    return triangles;
+}
+
+auto inline connectAccrossDiagonals(std::vector<Edge> diagonals, int polygonId) {
+    for (Edge d : diagonals) {
+
+        std::vector<const Triangle*>*triangles1 = d.first->getTriangles(polygonId);
+        std::vector<const Triangle*>*triangles2 = d.second->getTriangles(polygonId);
+
+        std::vector<const Triangle*> opposing;
+        for (auto it = triangles1->begin(); it != triangles1->end(); it++) {
+            if (std::find(triangles2->begin(), triangles2->end(), *it) != triangles2->end()) {
+                opposing.push_back(*it);
+            }
+        }
+
+        for (int i = 0; i < 3; i++) {
+            if (opposing[0]->points[i] != d.first and opposing[0]->points[i] != d.second) {
+
+                opposing[0]->neighbours[i] = opposing[1];
+                break;
+            }
+        }
+        for (int i = 0; i < 3; i++) {
+            if (opposing[1]->points[i] != d.first and opposing[0]->points[i] != d.second) {
+                opposing[1]->neighbours[i] = opposing[0];
+                break;
+            }
+        }
+    }
+}
+
+bool inline isCW(std::vector<const Coords*> ring) {
+    double sum = 0.0;
+    for (int i = 0; i < ring.size(); i++) {
+        sum += (ring[(i + 1) % ring.size()]->getX() - ring[i]->getX())*(ring[(i + 1) % ring.size()]->getY() + ring[i]->getY());
+    }
+    return sum > 0;
+}
+
+auto inline triangulatePolygon(std::vector<std::vector <const Coords*>> polygon, int polygonId) {
+    std::vector<Triangle*> triangles;
+    std::vector<Edge> diagonals{};
+    auto monotones = splitToMonotone(polygon, &diagonals);
+    //std::cout << "Monotones done" << std::endl;
+    //plotPolygon(polygon, "black");
+    for (auto mono : monotones) {
+        /*if (isCW(mono)) {
+            plotPolygon(std::vector<std::vector<const Coords*>>
+            {
+                mono
+            }, "blue");
+
+        } else {
+            plotPolygon(std::vector<std::vector<const Coords*>>
+            {
+                mono
+            }, "red");
+
+        }*/
+        auto t = triangulateMonotone(mono, polygonId);
+        triangles.insert(triangles.end(), t.begin(), t.end());
+    }
+    //matplotlibcpp::show();
+
+    connectAccrossDiagonals(diagonals, polygonId);
+    return triangles;
+}
+
 
 #endif /* SRC_GEOMFUNC_H_ */

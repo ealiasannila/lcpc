@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="97">
+<configurationDescriptor version="100">
   <projectmakefile>Makefile</projectmakefile>
   <confs>
     <conf name="Debug" type="1">
@@ -24,7 +24,6 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" looper.shp loopper_targets.shp loopper_start.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" large_sp.shp ltargets.shp lstart.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" complex.shp ltargets.shp lstart.shp Luokka3 path points 50 "ESRI Shapefile" astar</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" complex.shp ltargets.shp lstart.shp Luokka3 path points 500 "ESRI Shapefile" astar</runcommandpicklistitem>
@@ -34,8 +33,9 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -o testdata/paths.shp -a dijkstra --overwrite</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/test_sim.shp testdata/test_targets.shp testdata/test_start.shp friction -d 20 -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction  -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp -o testdata/paths.shp</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" testdata/test_sim.shp testdata/test_targets.shp testdata/test_start.shp friction -d 20 -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommand>
+        <runcommand>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction  -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp -o testdata/paths.shp</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <console-type>2</console-type>
@@ -56,8 +56,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>
@@ -69,7 +67,6 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -i testdata/paths.shp -a dijkstra --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/test_sim.shp testdata/test_targets.shp testdata/test_start.shp friction -i testdata/paths.shp -a dijkstra --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/test_sim.shp testdata/test_targets.shp testdata/test_start.shp friction -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/test_sim.shp testdata/test_targets.shp testdata/test_start.shp friction -d 10 -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommandpicklistitem>
@@ -79,8 +76,9 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction -d 100 -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction  -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp --fwc along --bwc along</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction  -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp --fwc along --bwc along --cc cross</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction  -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp -o testdata/paths.shp</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction  -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp --fwc along --bwc along --cc cross</runcommand>
+        <runcommand>"${OUTPUT_PATH}" testdata/sim.shp testdata/targets.shp testdata/start.shp friction  -i testdata/paths.shp -a astar --overwrite  -l testdata/linear.shp -o testdata/paths.shp</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <console-type>2</console-type>

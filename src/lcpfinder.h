@@ -64,8 +64,13 @@ public:
     std::tr1::unordered_set<Coords, CoordsHasher>* getCoordmap() {
         return &coordmap;
     }
+    
+    std::vector<std::vector<const Coords*>> getPolygon(int i){
+        return this->polygons[i];
+    }
+    
     std::deque<const Coords*> leastCostPath(int algorithm);
-    void addPolygon(std::vector<std::vector<p2t::Point*>> points, double friction);
+    void addPolygon(std::vector<std::vector<p2t::Point>> points, double friction);
     //void addLine(std::vector<p2t::Point*>*, double frictionForwards,double frictionBackwards, std::array<int,2> polygons);
     void addStartPoint(p2t::Point* start, int polygon);
     void addTargetPoint(p2t::Point* steinerpoint, int polygon);

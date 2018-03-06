@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="97">
+<configurationDescriptor version="100">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
@@ -91,22 +91,25 @@
       <compileType>
         <cTool>
           <developmentMode>0</developmentMode>
-          <commandLine>-g -O0</commandLine>
+          <incDir>
+            <pElem>/usr/inlcude</pElem>
+          </incDir>
+          <commandLine>-g -O0 -pg -f</commandLine>
         </cTool>
         <ccTool>
-          <developmentMode>6</developmentMode>
           <standard>11</standard>
           <commandlineTool>g++</commandlineTool>
           <incDir>
             <pElem>/usr/include/gdal</pElem>
           </incDir>
+          <commandLine>-l gdal -pg -fpermissive -no-pie</commandLine>
           <warningLevel>2</warningLevel>
         </ccTool>
         <linkerTool>
           <linkerAddLib>
             <pElem>/usr/include/gdal</pElem>
           </linkerAddLib>
-          <commandLine>-lgdal</commandLine>
+          <commandLine>-lgdal -pg</commandLine>
         </linkerTool>
       </compileType>
       <item path="lib/clipper/Documentation/clipper.chm"
@@ -207,10 +210,11 @@
       <compileType>
         <cTool>
           <developmentMode>6</developmentMode>
+          <standard>10</standard>
           <incDir>
             <pElem>/usr/include</pElem>
           </incDir>
-          <commandLine>-pg</commandLine>
+          <commandLine>-pg -f</commandLine>
         </cTool>
         <ccTool>
           <developmentMode>6</developmentMode>
@@ -218,7 +222,8 @@
           <incDir>
             <pElem>/usr/include/gdal</pElem>
           </incDir>
-          <commandLine>-l gdal -pg</commandLine>
+          <commandLine>-l gdal -pg -fpermissive</commandLine>
+          <warningLevel>0</warningLevel>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -230,6 +235,9 @@
           <linkerAddLib>
             <pElem>/usr/include/gdal</pElem>
           </linkerAddLib>
+          <linkerLibItems>
+            <linkerLibLibItem>gdal</linkerLibLibItem>
+          </linkerLibItems>
           <commandLine>-lgdal -pg</commandLine>
         </linkerTool>
       </compileType>

@@ -18,8 +18,10 @@ class Coords;
 
 struct Triangle {
     std::array<const Coords*, 3> points;
-    std::array<const Triangle*, 3> neighbours;
+    mutable std::array<const Triangle*, 3> neighbours;
     std::vector<const Coords*> interiorPoints;
+    Triangle(std::array<const Coords*, 3> points);
+    Triangle();
 };
 
 class Coords {
@@ -102,6 +104,7 @@ public:
 
 
     bool operator<(const Coords& c) const;
+    bool operator>(const Coords& c) const;
 
     bool operator==(const Coords& c) const;
     bool operator!=(const Coords& c) const;

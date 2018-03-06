@@ -17,6 +17,7 @@
 #include <ctime>
 #include <string.h>
 #include<iostream>
+#include <sstream>
 #include <map>
 
 bool fileExists(const std::string& name) {
@@ -32,16 +33,15 @@ bool fileExists(const std::string& name) {
 void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
     std::set<const Triangle*> used;
     finder->triangulate(polygon);
-    std::tr1::unordered_set<Coords, CoordsHasher>* cm = finder->getCoordmap();
 
-    OGRSFDriver *driver;
-    OGRRegisterAll();
-    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
-    OGRDataSource *pointDS;
+    GDALDriver *driver;
+    GDALAllRegister();
+    driver = GetGDALDriverManager()->GetDriverByName("ESRI Shapefile");
+    GDALDataset *pointDS;
     if (fileExists(outfile)) {
-        driver->DeleteDataSource((outfile).c_str());
+        driver->Delete((outfile).c_str());
     }
-    pointDS = driver->CreateDataSource(outfile.c_str(), NULL);
+    pointDS = driver->Create(outfile.c_str(), NULL, NULL, NULL, GDT_Unknown, NULL);
     if (pointDS == NULL) {
         printf("Creation of output file failed.\n");
         exit(1);
@@ -62,32 +62,41 @@ void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
         printf("Creating polygon field failed.\n");
         exit(1);
     }
-    for (auto it = cm->begin(); it != cm->end(); it++) {
-        const Coords c = *it;
-        if (c.belongsToPolygon(polygon)) {
-            for (auto p = c.getTriangles(polygon)->begin(); p != c.getTriangles(polygon)->end(); p++) {
-                OGRFeature *feature;
-                feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
-                OGRPolygon polygon{};
-                OGRLinearRing ring{};
-                if (used.find(*p) == used.end()) {
-                    for (int i = 2; i >= 0; i--) {
-                        ring.addPoint((*p)->points[i]->getX(), (*p)->points[i]->getY());
+    int tricount = 0;
+    int nodecount = 0;
+    std::vector<std::vector<const Coords*> > pol = finder->getPolygon(polygon);
+    for (std::vector<const Coords*> ring : pol) {
+        for (auto it = ring.begin(); it != ring.end(); it++) {
+            const Coords c = **it;
+            nodecount++;
+            if (c.belongsToPolygon(polygon) && c.flag == 0) {
+                for (auto p = c.getTriangles(polygon)->begin(); p != c.getTriangles(polygon)->end(); p++) {
+                    OGRFeature *feature;
+                    feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
+                    OGRPolygon polygon{};
+                    OGRLinearRing ring{};
+                    if (used.find(*p) == used.end()) {
+                        tricount++;
+                        for (int i = 0; i < 3; i++) {
+                            ring.addPoint((*p)->points[i]->getX(), (*p)->points[i]->getY());
+                        }
+                        ring.addPoint((*p)->points[0]->getX(), (*p)->points[0]->getY());
+                        used.insert(*p);
                     }
-                    used.insert(*p);
+                    polygon.addRing(&ring);
+                    feature->SetGeometry(&polygon);
+                    if (layer->CreateFeature(feature) != OGRERR_NONE) {
+                        printf("Failed to create feature in shapefile.\n");
+                        exit(1);
+                    }
+                    OGRFeature::DestroyFeature(feature);
                 }
-                polygon.addRing(&ring);
-                feature->SetGeometry(&polygon);
-                if (layer->CreateFeature(feature) != OGRERR_NONE) {
-                    printf("Failed to create feature in shapefile.\n");
-                    exit(1);
-                }
-                OGRFeature::DestroyFeature(feature);
             }
         }
     }
+    std::cout << "counts:" << nodecount << "  " << tricount << std::endl;
 
-    OGRDataSource::DestroyDataSource(pointDS);
+    GDALClose(pointDS);
     std::cout << "done saving\n";
 
 
@@ -95,8 +104,9 @@ void saveTriangulation(LcpFinder* finder, std::string outfile, int polygon) {
 
 }
 
+/*
 void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f, bool useClosest) {
-    for(int i = 0; i<finder->getPolygonCount();i++){
+    for (int i = 0; i < finder->getPolygonCount(); i++) {
         finder->triangulate(i);
     }
     const Coords* closest = 0;
@@ -157,7 +167,9 @@ void saveNeighbours(LcpFinder* finder, std::string outfile, Coords f, bool useCl
     OGRDataSource::DestroyDataSource(pointDS);
     std::cout << "done saving\n";
 }
+ */
 
+/*
 void savePolygon(std::vector<std::vector<std::vector<p2t::Point*>>> polygons, std::string file) {
     if (polygons.empty()) {
         std::cout << "NO POLYGONS";
@@ -235,7 +247,6 @@ void savePolygon(std::vector<std::vector<std::vector<p2t::Point*>>> polygons, st
 
 }
 
-/*
 void savePolygons(LcpFinder* finder, std::string outputpolygon) {
     OGRSFDriver *driver;
     OGRRegisterAll();
@@ -302,7 +313,7 @@ void savePolygons(LcpFinder* finder, std::string outputpolygon) {
     OGRDataSource::DestroyDataSource(pointDS);
     std::cout << "done saving\n";
 }
- */
+ 
 bool comparePolys(OGRPolygon* ogr, std::vector<std::vector<p2t::Point*>> p2tp) {
     if (ogr->getExteriorRing()->getNumPoints() != p2tp[0].size()) {
         std::cout << "ext ring size: " << ogr->getExteriorRing()->getNumPoints() << " vs. " << p2tp[0].size() << std::endl;
@@ -322,6 +333,7 @@ bool comparePolys(OGRPolygon* ogr, std::vector<std::vector<p2t::Point*>> p2tp) {
     return true;
 
 }
+ */
 
 void checkCRS(OGRLayer* csLr, OGRLayer* targetLr, OGRLayer* startLr) {
     if (!csLr->GetSpatialRef()->IsProjected()) {
@@ -352,23 +364,26 @@ void checkCRS(OGRLayer* csLr, OGRLayer* targetLr, OGRLayer* startLr) {
 }
 
 void readCostSurface(const char* costSurface, const char* targets, const char* start, LcpFinder* finder, const char* frictionField, OGRSpatialReference* sr) {
-    OGRDataSource *csDS;
-    csDS = OGRSFDriverRegistrar::Open(costSurface);
+
+    GDALDataset *csDS;
+    GDALDataset *startDS;
+    GDALDataset *targetDS;
+
+    csDS = (GDALDataset*) GDALOpenEx(costSurface, GDAL_OF_VECTOR, NULL, NULL, NULL);
     if (csDS == NULL) {
-        std::cout << costSurface;
-        std::cout << " COST SURFACE NOT FOUND!\n";
+        printf("Cost surface not found.\n");
         return;
     }
-    OGRDataSource *targetDS;
-    targetDS = OGRSFDriverRegistrar::Open(targets);
+
+    targetDS = (GDALDataset*) GDALOpenEx(targets, GDAL_OF_VECTOR, NULL, NULL, NULL);
     if (targetDS == NULL) {
-        std::cout << "TARGET POINTS NOT FOUND!\n";
+        printf("Cost surface not found.\n");
         return;
     }
-    OGRDataSource *startDS;
-    startDS = OGRSFDriverRegistrar::Open(start);
-    if (startDS == NULL) {
-        std::cout << "START POINT NOT FOUND!\n";
+
+    startDS = (GDALDataset*) GDALOpenEx(start, GDAL_OF_VECTOR, NULL, NULL, NULL);
+    if (targetDS == NULL) {
+        printf("Cost surface not found.\n");
         return;
     }
 
@@ -384,11 +399,11 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
     std::cout << targetLr->GetFeatureCount() << " target points found" << std::endl;
     std::cout << startLr->GetFeatureCount() << " start point found" << std::endl;
 
-    OGRFeature *startFtre = startLr->GetNextFeature();
+    OGRFeature *startFtre = startLr->GetFeature(0);
     std::vector<OGRPoint*> targetOGRPoints;
     std::vector<OGRFeature*> targetPointers;
     OGRFeature * targetFtre;
-    while ((targetFtre = targetLr->GetNextFeature()) != NULL) {
+    while ((targetFtre = targetDS->GetNextFeature(&targetLr, NULL, NULL, NULL)) != NULL) {
         targetPointers.push_back(targetFtre);
         OGRGeometry* targetGeom = targetFtre->GetGeometryRef();
         if (targetGeom != NULL
@@ -414,7 +429,7 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
     }
     int pIdx = 0;
     OGRFeature * csFtre;
-    while ((csFtre = csLr->GetNextFeature()) != NULL) {
+    while ((csFtre = csDS->GetNextFeature(&csLr, NULL, NULL, NULL)) != NULL) {
         OGRGeometry* csGeometry = csFtre->GetGeometryRef();
         if (csGeometry != NULL
                 && wkbFlatten(csGeometry->getGeometryType()) == wkbPolygon) {
@@ -430,23 +445,26 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
                     intRing->reverseWindingOrder();
                 }
             }
-            std::vector<std::vector<std::vector<p2t::Point*> > > sPolygons = simplify(csPolygon);
-            for (std::vector<std::vector<p2t::Point*> > polygon : sPolygons) {
+            std::vector<std::vector<std::vector<p2t::Point> > > sPolygons = simplify(csPolygon);
+            for (std::vector<std::vector<p2t::Point> > polygon : sPolygons) {
                 //std::cout<<"POLYGON: "<<pIdx<<"size: "<<polygon[0].size()<<std::endl;
                 finder->addPolygon(polygon, csFtre->GetFieldAsDouble(frictionField));
-                if (inside(polygon, startp2t)) {
+                if (inside(polygon, *startp2t)) {
                     finder->addStartPoint(startp2t, pIdx);
+
                 }
                 for (int i = 0; i < targetOGRPoints.size(); i++) {
                     p2t::Point* targetp2t = new p2t::Point(targetOGRPoints[i]->getX(), targetOGRPoints[i]->getY());
-                    if (inside(polygon, targetp2t)) {
+                    if (inside(polygon, *targetp2t)) {
                         finder->addTargetPoint(targetp2t, pIdx);
                     } else {
                         delete targetp2t;
                     }
                 }
                 pIdx++;
+
             }
+
         } else {
             std::cout << "no polygon geometry " << pIdx << "\n";
             std::cout << csGeometry << std::endl;
@@ -460,11 +478,13 @@ void readCostSurface(const char* costSurface, const char* targets, const char* s
         OGRFeature::DestroyFeature(targetPt);
     }
     OGRFeature::DestroyFeature(startFtre);
-    OGRDataSource::DestroyDataSource(csDS);
-    OGRDataSource::DestroyDataSource(startDS);
-    OGRDataSource::DestroyDataSource(targetDS);
+
+    GDALClose(csDS);
+    GDALClose(startDS);
+    GDALClose(targetDS);
 }
 
+/*
 void readLinear(const char* linear, LcpFinder* finder, const char* FFFW, const char* FFBW, const char* FFC, double maxd) {
 
     OGRDataSource *linearDS;
@@ -505,8 +525,8 @@ void readLinear(const char* linear, LcpFinder* finder, const char* FFFW, const c
     }
     OGRDataSource::DestroyDataSource(linearDS);
 }
-
-bool testDriver(OGRSFDriver* driver) {
+ */
+bool testDriver(GDALDriver* driver) {
     if (driver == NULL) {
         printf("Driver not available Do you want to use default driver ESRI Shapefile?.\n");
         std::string useShp;
@@ -525,7 +545,7 @@ bool testDriver(OGRSFDriver* driver) {
     return true;
 }
 
-std::string validateOutfile(OGRSFDriver* driver, std::string outputfile) {
+std::string validateOutfile(GDALDriver* driver, std::string outputfile) {
 
     if (fileExists(outputfile)) {
         std::cout << "Filename already in use, do you want to overwrite? (yes/Yes/YES/Y/y for yes, anything else for no)\n";
@@ -535,7 +555,7 @@ std::string validateOutfile(OGRSFDriver* driver, std::string outputfile) {
         std::vector<std::string> yesOptions = {"yes", "Yes", "YES", "y", "Y"};
         for (std::string yes : yesOptions) {
             if (overwrite == yes) {
-                driver->DeleteDataSource((outputfile).c_str());
+                driver->pfnDeleteDataSource(driver,(outputfile).c_str());
                 ow = true;
                 break;
             }
@@ -549,88 +569,89 @@ std::string validateOutfile(OGRSFDriver* driver, std::string outputfile) {
     return outputfile;
 }
 
+/*
+
 void writePoints(std::deque<const Coords*> results, std::string outputfile, std::string pszDriverName, OGRSpatialReference sr, bool overwrite) {
-    OGRSFDriver *driver;
-    OGRRegisterAll();
-    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName.c_str());
+   OGRSFDriver *driver;
+   OGRRegisterAll();
+   driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName.c_str());
 
-    if (!overwrite) {
-        if (!testDriver(driver)) {
-            driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
-        }
-    }
-
-
-    OGRDataSource *pointDS;
-
-    if (!overwrite) {
-        outputfile = validateOutfile(driver, outputfile);
-    } else if (fileExists(outputfile)) {
-        driver->DeleteDataSource((outputfile).c_str());
-    }
-    pointDS = driver->CreateDataSource((outputfile).c_str(), NULL);
-    if (pointDS == NULL) {
-        printf("Creation of output file failed.\n");
-        exit(1);
-    }
+   if (!overwrite) {
+       if (!testDriver(driver)) {
+           driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+       }
+   }
 
 
-    OGRLayer *pointLayer;
-    pointLayer = pointDS->CreateLayer("point_results", &sr, wkbPoint, NULL);
-    if (pointLayer == NULL) {
-        printf("Point layer creation failed.\n");
-        exit(1);
-    }
+   OGRDataSource *pointDS;
 
-    OGRFieldDefn cField("cost", OFTReal);
-    cField.SetPrecision(2);
+   if (!overwrite) {
+       outputfile = validateOutfile(driver, outputfile);
+   } else if (fileExists(outputfile)) {
+       driver->DeleteDataSource((outputfile).c_str());
+   }
+   pointDS = driver->CreateDataSource((outputfile).c_str(), NULL);
+   if (pointDS == NULL) {
+       printf("Creation of output file failed.\n");
+       exit(1);
+   }
 
 
-    if (pointLayer->CreateField(&cField) != OGRERR_NONE) {
-        printf("Creating Cost field failed.\n");
-        exit(1);
-    }
+   OGRLayer *pointLayer;
+   pointLayer = pointDS->CreateLayer("point_results", &sr, wkbPoint, NULL);
+   if (pointLayer == NULL) {
+       printf("Point layer creation failed.\n");
+       exit(1);
+   }
 
-    for (const Coords* point : results) {
-        OGRFeature *poFeature;
+   OGRFieldDefn cField("cost", OFTReal);
+   cField.SetPrecision(2);
 
-        poFeature = OGRFeature::CreateFeature(pointLayer->GetLayerDefn());
-        poFeature->SetField("cost", point->getToStart());
-        OGRPoint ogrpt(point->getX(), point->getY());
-        poFeature->SetGeometry(&ogrpt);
 
-        if (pointLayer->CreateFeature(poFeature) != OGRERR_NONE) {
+   if (pointLayer->CreateField(&cField) != OGRERR_NONE) {
+       printf("Creating Cost field failed.\n");
+       exit(1);
+   }
 
-            printf("Failed to create feature in shapefile.\n");
-            exit(1);
-        }
+   for (const Coords* point : results) {
+       OGRFeature *poFeature;
 
-        OGRFeature::DestroyFeature(poFeature);
-    }
+       poFeature = OGRFeature::CreateFeature(pointLayer->GetLayerDefn());
+       poFeature->SetField("cost", point->getToStart());
+       OGRPoint ogrpt(point->getX(), point->getY());
+       poFeature->SetGeometry(&ogrpt);
 
-    OGRDataSource::DestroyDataSource(pointDS);
+       if (pointLayer->CreateFeature(poFeature) != OGRERR_NONE) {
+
+           printf("Failed to create feature in shapefile.\n");
+           exit(1);
+       }
+
+       OGRFeature::DestroyFeature(poFeature);
+   }
+
+   OGRDataSource::DestroyDataSource(pointDS);
 
 
 }
-
+ */
 void writeOutput(std::deque<const Coords*> results, std::string outputfile, std::string pszDriverName, OGRSpatialReference sr, bool overwrite) {
-
-    OGRSFDriver *driver;
-    OGRRegisterAll();
-    driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName.c_str());
+    GDALDriver *driver;
+    GDALAllRegister();
+    driver = GetGDALDriverManager()->GetDriverByName(pszDriverName.c_str());
     if (!overwrite) {
         if (!testDriver(driver)) {
             driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
         }
     }
-    OGRDataSource *pathDS;
+    GDALDataset *pathDS;
     if (!overwrite) {
         outputfile = validateOutfile(driver, outputfile);
 
     } else if (fileExists(outputfile)) {
-        driver->DeleteDataSource((outputfile).c_str());
+        driver->Delete((outputfile).c_str());
     }
-    pathDS = driver->CreateDataSource((outputfile).c_str(), NULL);
+    pathDS = driver->Create((outputfile).c_str(), NULL, NULL, NULL,GDT_Unknown, NULL);
     if (pathDS == NULL) {
         printf("Creation of output file failed.\n");
         exit(1);
@@ -737,10 +758,11 @@ void writeOutput(std::deque<const Coords*> results, std::string outputfile, std:
         delete ls.second;
     }
 
-    OGRDataSource::DestroyDataSource(pathDS);
+    GDALClose(pathDS);
 
 }
 
+/*
 void writeOutputInvidual(std::deque<const Coords*> results, std::string outputfile, std::string pszDriverName, OGRSpatialReference sr, bool overwrite) {
 
     OGRSFDriver *driver;
@@ -814,6 +836,8 @@ void writeOutputInvidual(std::deque<const Coords*> results, std::string outputfi
     }
     OGRDataSource::DestroyDataSource(pathDS);
 }
+ * 
+ * */
 
 bool argExists(std::string argSwitch, char* argv[], int argc) {
     for (int i = 0; i < argc; i++) {
@@ -857,10 +881,46 @@ void printTriangle(Triangle* t) {
 
 int main(int argc, char* argv[]) {
 
+    /*
+    std::string ext = "773.6664582066915 -1097.654455639297, 1438.37406931964 -1164.700449293967, 1980.179460847239 -673.1656611039796, 554.494146924882 -772.2186036729893, 1074.571231374806 -428.9340870775081, 2264.825880576197 -257.0309796962655, 3220.187676508343 -349.1995507060333, 3074.961489088575 -729.02188703466, 2728.652888318357 -656.4087933247756, 2533.156097560975 -1287.584146341464, 3879.291142490372 -2533.177984595636, 3300.489063671967 -2982.169162365442, 2421.443645699615 -2784.531001283698, 2695.139152759949 -1941.101989730424, 2582.766867233537 -1802.211427409336, 1438.37406931964 -1667.40648267009, 1202.319938098457 -1964.937687559853, 680.8580456852442 -1885.975691857102, 382.6913992297809 -1326.68350449294";
+    std::string inter = "1661.910108269481 -1163.02773944267, 1017.638571286707 -1516.94296409984, 889.7133537179041 -1516.94296409984, 889.7133537179041 -1625.883521049343, 1783.871210543036 -1431.967605994615, 2018.411791838334 -1535.165461764547, 1852.669781056323 -1372.55065873314, 1877.687443061155 -1277.170822339719, 1994.957733708804 -1341.2785812271, 2317.060132021013 -1549.237896642265, 2248.261561507727 -1259.971179711397, 2130.991270860077 -1133.319265811936, 2367.095456030677 -1061.393487548045, 2113.791628231755 -915.9783271449601, 1993.394129833502 -953.5048201522078, 1946.486013574443 -1163.02773944267";
+
+    std::istringstream isext(ext);
+    std::istringstream isinter(inter);
+
+    std::vector<std::vector <const Coords*>> polygon(1);
+    while (isext.good()) {
+        std::string substr;
+        std::string::size_type sz; // alias of size_t
+
+        std::getline(isext, substr, ',');
+
+        int i = substr.find(" ");
+        double x = std::stod(substr, &sz);
+        double y = std::stod(substr.substr(sz));
+
+        polygon[0].push_back(new Coords(x, y, 1));
+    }
 
 
+    while (isinter.good()) {
+        std::string substr;
+        std::getline(isinter, substr, ',');
+        std::string::size_type sz; // alias of size_t
 
-    OGRRegisterAll();
+        int i = substr.find(" ");
+        double x = std::stod(substr, &sz);
+        double y = std::stod(substr.substr(sz));
+
+    //    polygon[1].push_back(new Coords(x, y, 1));
+    }
+    //std::reverse(polygon[1].begin(), polygon[1].end());
+    splitToMonotone(polygon);
+
+    return 0;
+     * */
+    GDALAllRegister();
+
     if (argc < 2 or strcmp(argv[1], "-h") == 0) {
         std::cout << "This program is used to search for least cost paths in polygonal costsurface for more information see: URL.\n";
         std::cout << "USAGE:\n"
@@ -932,13 +992,13 @@ int main(int argc, char* argv[]) {
 
     if (argExists("-l", argv, argc)) {
         std::cout << "Reading linear\n";
-        readLinear(getArgVal("-l", argv, argc).c_str(), &finder, getArgVal("--fwc", argv, argc).c_str(), getArgVal("--bwc", argv, argc).c_str(), getArgVal("--cc", argv, argc).c_str(), distanceVal);
-        finder.addBuffers(1);
+        //readLinear(getArgVal("-l", argv, argc).c_str(), &finder, getArgVal("--fwc", argv, argc).c_str(), getArgVal("--bwc", argv, argc).c_str(), getArgVal("--cc", argv, argc).c_str(), distanceVal);
+        //finder.addBuffers(1);
     }
     std::cout << "Finished reading cost surface (took " << secs << " s). Starting LCP search...\n";
     //saveNeighbours(&finder, "testdata/neighbours_2.shp", Coords{305657.3,6719670.6}, false);
-    //saveTriangulation(&finder, "testdata/triangulation.shp", 1);
-    //exit(0);
+    saveTriangulation(&finder, "testdata/triangulation.shp", 12);
+    exit(0);
     begin = std::clock();
     std::deque<const Coords*> results = finder.leastCostPath(alg);
     //std::cout<<"found: "<<results.size()<<std::endl;
@@ -955,11 +1015,11 @@ int main(int argc, char* argv[]) {
     }
 
     if (argExists("-i", argv, argc)) {
-        writeOutputInvidual(results, getArgVal("-i", argv, argc), driver, sr, overwrite);
+        //writeOutputInvidual(results, getArgVal("-i", argv, argc), driver, sr, overwrite);
     }
 
     if (argExists("-p", argv, argc)) {
-        writePoints(results, getArgVal("-p", argv, argc), driver, sr, overwrite);
+        //writePoints(results, getArgVal("-p", argv, argc), driver, sr, overwrite);
     }
     std::cout << "All done!\n";
 

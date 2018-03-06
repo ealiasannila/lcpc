@@ -16,6 +16,14 @@
 #include <iomanip>
 #include <functional>
 
+Triangle::Triangle( std::array<const Coords*, 3> points){
+    this->points = points;
+    this->neighbours = std::array<const Triangle*,3>{nullptr,nullptr, nullptr};
+}
+Triangle::Triangle( ){
+    this->points =  std::array<const Coords*,3>{nullptr,nullptr, nullptr};
+    this->neighbours = std::array<const Triangle*,3>{nullptr,nullptr, nullptr};
+}
 Coords::Coords(double newx, double newy) {
     x = newx;
     y = newy;
@@ -104,10 +112,6 @@ std::string Coords::toString() const {
     sstm << std::setprecision(4);
     sstm << std::fixed;
     sstm << "xy: " << this->x << "," << this->y;
-    for(int i :this->belongsToPolygons()){
-        sstm<<" "<<i;
-    }
-    sstm<< std::endl;
     return sstm.str();
 }
 
@@ -136,6 +140,10 @@ bool Coords::operator==(const Coords& c) const {
         return true;
     }
     return false;
+}
+
+bool Coords::operator>(const Coords& c) const{
+    return !this->operator <(c) and this->operator !=(c);
 }
 
 bool Coords::operator!=(const Coords& c) const {
