@@ -12,8 +12,7 @@
 #include <iostream>
 #include<boost/heap/fibonacci_heap.hpp>
 #include<stack>
-
-
+#include "../../matplotlibcpp/matplotlibcpp.h"
 
 void LcpFinder::setMaxD(double d) {
     this->maxDist = d;
@@ -63,25 +62,47 @@ void printFunnel(Funnel f) {
     }
 }
 
-void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* nset) {
+auto inline plotPolygon(std::vector<std::vector<const Coords*>> polygon, std::string color) {
+    std::map<std::string, std::string> k{std::make_pair("color", color)};
+    int i = 0;
+    for (auto ring : polygon) {
+        std::vector<double>x, y;
+        for (auto c : ring) {
+            x.push_back(c->getX());
+            y.push_back(c->getY());
+            //matplotlibcpp::annotate(std::to_string(i), x.back(), y.back());
+            i++;
+        }
+        x.push_back(x[0]);
+        y.push_back(y[0]);
+        matplotlibcpp::plot(x, y, k);
+    }
 
+}
+
+void LcpFinder::findNeighboursInPolygon(const Coords* c, int polygon, nSet* nset) {
+    //std::cout << "POLYGON: " << polygon << std::endl;
     std::deque<Funnel> funnelQue = this->initFQue(c, polygon, nset);
+    //std::cout << "INIT DONE: " << polygon << std::endl;
+
     std::pair<const Coords*, const Coords*> base;
     const Coords* o;
+    int i = 0;
     Funnel f = funnelQue.front();
     while (!funnelQue.empty()) {
+        i++;
         f = funnelQue.front();
-        //printFunnel(f);
+
         funnelQue.pop_front();
         f.stepForward(&funnelQue, nset, this->frictions[polygon], this->maxDist);
     }
+    // std::cout << "FUNNELING DONE: " << polygon << std::endl;
 
+    
     if (this->fences.find(polygon) != this->fences.end()) {
         for (auto p = nset->begin(); p != nset->end(); p++) {
             double fencecost = this->checkFences(polygon, c, p->first);
-            if (c->flag == 2) {
-                //std::cout << c->toString() << p->first->toString() << " cost increased by " << fencecost << std::endl;
-            }
+            
             p->second += fencecost;
         }
     }
@@ -100,17 +121,37 @@ nSet LcpFinder::findNeighbours(const Coords* c) {
         if (p < 0) {
             std::cout << "HALOO!! -1 POLYGON\n";
         } else {
+            //std::cout << "Looking from polygon " << p << std::endl;
             findNeighboursInPolygon(c, p, &nset);
         }
-    }
-
-    if (c->flag == 2) {
-        for (std::tuple<const Coords*, double, double> n : c->linearNeighbours) {
-            //std::cout<<"linear fric: "<<n.second<<std::endl;
-            insertToNset(&nset, std::get<0>(n), std::get<1>(n), c, 0);
+        /*
+        for (auto ring : this->polygons[p]) {
+            std::vector<double> x, y;
+            for (auto c : ring) {
+                x.push_back(c->getX());
+                y.push_back(c->getY());
+            }
+            x.push_back(x[0]);
+            y.push_back(y[0]);
+            matplotlibcpp::plot(x, y);
         }
+         * */
+
+
+    }
+    //std::cout << "starting linear\n";
+    for (std::tuple<const Coords*, double, double> n : c->linearNeighbours) {
+        //std::cout<<"linear fric: "<<n.second<<std::endl;
+        //matplotlibcpp::annotate("N", std::get<0>(n)->getX(), std::get<0>(n)->getY());
+        insertToNset(&nset, std::get<0>(n), std::get<1>(n), c, 0);
     }
 
+    /*
+        for (auto p : nset) {
+            matplotlibcpp::plot(std::vector<double>{p.first->getX(), c->getX()}, std::vector<double>{p.first->getY(), c->getY()});
+        }
+        matplotlibcpp::show();
+     */
     return nset;
 }
 
@@ -132,10 +173,10 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
         std::cout << "No startpoint set in finder. Is the startpoint inside any polygon?\n" << std::endl;
         exit(1);
     }
-    for(int i = 0; i<this->polygons.size();i++){
+    for (int i = 0; i<this->polygons.size(); i++) {
         this->triangulate(i);
     }
-    
+
     int targetsFound = 0;
     this->startPoint->setToStart(0);
     /*
@@ -208,7 +249,6 @@ std::deque<const Coords*> LcpFinder::leastCostPath(int algorithm) {
                 //minheap.decrease(n); //reorders minheap after changing priority of n
             }
         }
-
     }
 
     std::deque<const Coords*> res{};
@@ -461,24 +501,24 @@ void LcpFinder::checkLinear(int polygon, Triangle * newTri, bool subtri) {
 
 void LcpFinder::triangulate(int polygon) {
 
-    
+
     if (this->triangulated[polygon]) {
         return;
     }
     this->triangulated[polygon] = true;
 
     auto points = this->polygons.at(polygon);
-    
+
     std::vector<Triangle*> newTriangles = triangulatePolygon(points, polygon);
-    int nodecount =0;
-    for(auto ring: points){
-        nodecount+=ring.size();
+    int nodecount = 0;
+    for (auto ring : points) {
+        nodecount += ring.size();
     }
-    
     for (int i = 0; i < newTriangles.size(); i++) {
+        //std::cout<<"i"<<i<<std::endl;
         Triangle* newTri = newTriangles[i];
         for (int n = 0; n < 3; n++) {
-            if (newTri->neighbours[n]==nullptr) {
+            if (newTri->neighbours[n] == nullptr) {
                 const Coords* lb = newTri->points[(n + 2) % 3];
                 const Coords* rb = newTri->points[(n + 1) % 3];
                 double d = eucDistance(lb, rb);
@@ -487,6 +527,7 @@ void LcpFinder::triangulate(int polygon) {
                     //std::cout << newTri;
                     int toAdd = std::ceil(d / this->maxDist) - 1;
                     //std::cout << "adding: " << toAdd << std::endl;
+                    //std::cout<<"toAdd: "<<toAdd<<std::endl;
                     for (int i = 1; i <= toAdd; i++) {
                         double x{((rb->getX() - lb->getX()) / (toAdd + 1)) * i + lb->getX()};
                         double y{((rb->getY() - lb->getY()) / (toAdd + 1)) * i + lb->getY()};
@@ -513,6 +554,7 @@ void LcpFinder::triangulate(int polygon) {
                         t2->neighbours[1] = t1;
                         t2->neighbours[0] = newTri->neighbours[(n + 1) % 3];
 
+
                         for (const Coords* interior : newTri->interiorPoints) {
                             if (coordsInTriangle(t1, interior)) {
                                 t1->interiorPoints.push_back(interior);
@@ -538,6 +580,7 @@ void LcpFinder::triangulate(int polygon) {
         this->checkLinear(polygon, newTri, true);
 
     }
+
 
 }
 
@@ -572,10 +615,10 @@ void LcpFinder::addPolygon(std::vector<std::vector < p2t::Point>> points, double
                 p.first->addToPolygon(polygon);
             }
             this->polygons.back()[ringIndex].push_back(&*p.first);
-            
+
         }
     }
-    
+
 }
 
 void LcpFinder::addTargetPoint(p2t::Point* targetpoint, int polygon) {
@@ -693,6 +736,7 @@ void LcpFinder::addBufferPoint(const Coords* prev, const Coords* c, const Coords
 }
 
 void LcpFinder::addLine(std::vector<p2t::Point*>* points, double friction, double crossing) {
+
     const Coords* prev = 0;
 
     for (auto it = points->begin(); it != points->end(); it++) {
@@ -709,8 +753,8 @@ void LcpFinder::addLine(std::vector<p2t::Point*>* points, double friction, doubl
             addLinePoint(p, polygons[1]);
         }
         if (prev != 0) {
-            std::cout << c->toString();
-            std::cout << prev->toString();
+            //std::cout << c->toString();
+            //std::cout << prev->toString();
             int next;
             std::vector<const Coords*> crossings = segmentPolygonIntersection(polygons[0], prev, c, &next);
             for (int i = 0; i < crossings.size(); i++) {

@@ -118,7 +118,7 @@ std::string Coords::toString() const {
 int Coords::isRight(const Coords* c1, const Coords* c2) const {
     double d = (c2->getY() - c1->getY()) * (x - c2->getX()) - (c2->getX() - c1->getX()) * (y - c2->getY());
 
-    if (std::abs(d) < 0.000001) {
+    if (std::abs(d) < 0.0000001) {
         return 0;
     }
     if (d < 0) {

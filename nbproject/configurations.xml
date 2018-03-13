@@ -237,6 +237,7 @@
           </linkerAddLib>
           <linkerLibItems>
             <linkerLibLibItem>gdal</linkerLibLibItem>
+            <linkerOptionItem>`pkg-config --libs python-2.7`</linkerOptionItem>
           </linkerLibItems>
           <commandLine>-lgdal -pg</commandLine>
         </linkerTool>

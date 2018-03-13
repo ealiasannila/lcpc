@@ -490,7 +490,6 @@ int inline getType(const Coords* c, std::unordered_map<const Coords*, std::vecto
 
 }
 
-
 bool inline cmp(Edge a, Edge b) {
     if (a.first->isRight(b.first, b.second) == 0 and a.second->isRight(b.first, b.second) == 0) {
         return false;
@@ -512,13 +511,13 @@ auto inline createEdge(const Coords* a, const Coords * b) {
         std::cout << "FUCKED UP" << std::endl;
         exit(1);
     }
-    if (cmpCoordsPointersByXY(a,b)) {
+    if (cmpCoordsPointersByXY(a, b)) {
         return std::make_pair(a, b);
     }
     return std::make_pair(b, a);
 }
 
-auto inline setItDown(Edge lower, std::map<Edge, const Coords*,bool (*)(Edge, Edge)>*edges) {
+auto inline setItDown(Edge lower, std::map<Edge, const Coords*, bool (*)(Edge, Edge)>*edges) {
     auto it = edges->lower_bound(lower);
 
     if (it != edges->end() and it != edges->begin()) {
@@ -528,7 +527,8 @@ auto inline setItDown(Edge lower, std::map<Edge, const Coords*,bool (*)(Edge, Ed
     }
     return it;
 }
-auto inline leftMost (const Coords* c, const Coords * prev, std::unordered_map<const Coords*, std::vector<const Coords*>>*neighbors){
+
+auto inline leftMost(const Coords* c, const Coords * prev, std::unordered_map<const Coords*, std::vector<const Coords*>>*neighbors) {
     double maxAngle = std::numeric_limits<double>::min();
     const Coords* leftMost = nullptr;
 
@@ -562,11 +562,13 @@ auto inline leftMost (const Coords* c, const Coords * prev, std::unordered_map<c
 
 auto inline addDiagonal(Edge e, std::vector<Edge>*diagonals, std::vector<Edge>*starts, std::unordered_map<const Coords*, std::vector<const Coords*>>*neighbors) {
     int type = getType(e.first, neighbors);
+
     if (type != START and type != MERGE) {
-        if (e.first->getY() > e.second->getY()) {
+        auto leftMostNeighbor = leftMost(e.first, e.second, neighbors);
+        if (cmpCoordsPointersByXY(leftMostNeighbor, e.first)) {
             starts->push_back(e);
         } else {
-            starts->push_back(createEdge(e.first, leftMost(e.first, e.second, neighbors)));
+            starts->push_back(createEdge(e.first, leftMostNeighbor));
         }
 
     }
@@ -597,26 +599,24 @@ auto inline splitToMonotone(std::vector<std::vector<const Coords*>> polygon, std
 
 
     std::sort(combined.begin(), combined.end(), cmpCoordsPointersByXY);
-    std::map<Edge, const Coords*,bool (*)(Edge, Edge) > edges(cmp);
+    std::map<Edge, const Coords*, bool (*)(Edge, Edge) > edges(cmp);
     std::vector<Edge> starts{};
 
 
 
 
-    //std::cout << "preliminaries" << std::endl;
-
+    
     for (const Coords* c : combined) {
         int vtype = getType(c, &neighbors);
+
 
         if (vtype == START) {
             starts.push_back(createEdge(c, neighbors.at(c)[0]));
         }
 
-        Edge le = createEdge(c, neighbors.at(c)[0]);
-        Edge re = createEdge(c, neighbors.at(c)[1]);
         //IF vtype in split, merge, start or stop: higher = higher, if vtype is ordinary higher = righmost edge
-        Edge higher = re;
-        Edge lower = le;
+        Edge higher = createEdge(c, neighbors.at(c)[0]);
+        Edge lower = createEdge(c, neighbors.at(c)[1]);
         bool orient = *(neighbors.at(c)[0]) < *(neighbors.at(c)[1]);
 
         auto itUp = edges.end();
@@ -625,26 +625,32 @@ auto inline splitToMonotone(std::vector<std::vector<const Coords*>> polygon, std
 
 
 
+
+
         /*
          Messed up section setting itUp and Down
          */
         if (vtype != ORDINARY) {
-            if (neighbors.at(c)[0]->getY() >= neighbors.at(c)[1]->getY()) {
-                lower = re;
-                higher = le;
+            if (cmp(higher, lower)) {
+                Edge tmp = lower;
+                lower = higher;
+                higher = tmp;
+
             }
             if (vtype == SPLIT or vtype == MERGE) {
                 itUp = edges.upper_bound(higher);
                 itDown = setItDown(lower, &edges);
             }
         } else if (orient) {
-            lower = re;
-            higher = le;
-            itDown = setItDown(higher, &edges);
+            Edge tmp = lower;
+            lower = higher;
+            higher = tmp;
+            itDown = setItDown(lower, &edges);
         } else {
-            itUp = edges.upper_bound(higher);
+            itUp = edges.upper_bound(lower);
 
         }
+        
 
         //OK section setting diagonals
         if (vtype == SPLIT) {
@@ -652,44 +658,50 @@ auto inline splitToMonotone(std::vector<std::vector<const Coords*>> polygon, std
                 std::cout << "mysterious split.." << std::endl;
                 exit(1);
             } else {
-                addDiagonal(createEdge(c, itUp->second),diagonals,&starts,&neighbors);
+                addDiagonal(createEdge(c, itUp->second), diagonals, &starts, &neighbors);
             }
         }
         if (itDown != edges.end()) {
             if (getType(itDown->second, &neighbors) == MERGE) {
-                addDiagonal(createEdge(c, itDown->second),diagonals,&starts,&neighbors);
+                addDiagonal(createEdge(c, itDown->second), diagonals, &starts, &neighbors);
             }
             edges[itDown->first] = c;
         }
 
         if (itUp != edges.end()) {
             if (getType(itUp->second, &neighbors) == MERGE) {
-                addDiagonal(createEdge(c, itUp->second),diagonals,&starts,&neighbors);
+                addDiagonal(createEdge(c, itUp->second), diagonals, &starts, &neighbors);
             }
             edges[itUp->first] = c;
         }
 
+
+
+
         //OK section updating edges
         if (vtype == SPLIT or vtype == START) {
+
             edges[higher] = c;
             edges[lower] = c;
         } else if (vtype == STOP or vtype == MERGE) {
+
             edges.erase(higher);
             edges.erase(lower);
         } else if (vtype == ORDINARY) {
-            edges.erase(higher);
-            edges[lower] = c;
+            edges.erase(lower);
+            edges[higher] = c;
         }
-        //plot(c, itUp, itDown, higher, lower);
 
+   
     }
-    //std::cout << "for loop done" << std::endl;
-
+   
     std::vector<std::vector<const Coords*>> monotone
     {
     };
     monotone.reserve(starts.size());
+
     for (Edge e : starts) {
+        //matplotlibcpp::annotate("S", e.first->getX(), e.first->getY());
         const Coords* prev = e.first;
         const Coords* s = prev;
         const Coords* c = e.second;
@@ -697,10 +709,11 @@ auto inline splitToMonotone(std::vector<std::vector<const Coords*>> polygon, std
 
         while (c != s) {
             mono.push_back(c);
-            const Coords* next = leftMost(c, prev,&neighbors);
+            const Coords* next = leftMost(c, prev, &neighbors);
             prev = c;
             c = next;
         }
+
         monotone.push_back(mono);
     }
     return monotone;
@@ -745,7 +758,7 @@ auto inline triangulateMonotone(std::vector<const Coords*> monotone, int polygon
     auto targetNumberOfNeighbors = [&nextAlongMonotone](Triangle * t) {
         int target = 3;
         for (int i = 0; i < 3; i++) {
-            if (nextAlongMonotone[t->points[i]] == t->points[(i + 1) % 3]) {
+            if (nextAlongMonotone[t->points[i]] == t->points[(i + 2) % 3]) {
                 target--;
             }
         }
@@ -777,7 +790,7 @@ auto inline triangulateMonotone(std::vector<const Coords*> monotone, int polygon
         return targetNumberOfNeighbors(t) + missing == 3;
     };
 
-    auto addToTriangles = [&polygonId, &triangles, &triangleSet, &trianglesAreNeighbors, &neighborsFull](std::pair<const Coords*, int>c, std::pair<const Coords*, int>k, std::pair<const Coords*, int>st) {
+    auto addToTriangles = [&targetNumberOfNeighbors,&polygonId, &triangles, &triangleSet, &trianglesAreNeighbors, &neighborsFull](std::pair<const Coords*, int>c, std::pair<const Coords*, int>k, std::pair<const Coords*, int>st) {
         triangles.push_back(new Triangle(std::array<const Coords*, 3>{k.first, c.first, st.first}));
         c.first->addTriangle(triangles.back(), polygonId);
         k.first->addTriangle(triangles.back(), polygonId);
@@ -792,7 +805,7 @@ auto inline triangulateMonotone(std::vector<const Coords*> monotone, int polygon
             }
 
         }
-        if (neighbors < 2) {
+        if (neighbors < targetNumberOfNeighbors(triangles.back())) {
             triangleSet.insert(triangles.back());
         }
 
@@ -862,7 +875,7 @@ auto inline connectAccrossDiagonals(std::vector<Edge> diagonals, int polygonId) 
             }
         }
         for (int i = 0; i < 3; i++) {
-            if (opposing[1]->points[i] != d.first and opposing[0]->points[i] != d.second) {
+            if (opposing[1]->points[i] != d.first and opposing[1]->points[i] != d.second) {
                 opposing[1]->neighbours[i] = opposing[0];
                 break;
             }

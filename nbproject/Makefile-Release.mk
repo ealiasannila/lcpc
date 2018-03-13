@@ -61,7 +61,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/include/gdal -lgdal
+LDLIBSOPTIONS=-L/usr/include/gdal -lgdal `pkg-config --libs python-2.7`  
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -74,52 +74,52 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/lcpc: ${OBJECTFILES}
 ${OBJECTDIR}/lib/clipper/cpp/clipper.o: lib/clipper/cpp/clipper.cpp
 	${MKDIR} -p ${OBJECTDIR}/lib/clipper/cpp
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/clipper/cpp/clipper.o lib/clipper/cpp/clipper.cpp
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/clipper/cpp/clipper.o lib/clipper/cpp/clipper.cpp
 
 ${OBJECTDIR}/lib/common/shapes.o: lib/common/shapes.cc
 	${MKDIR} -p ${OBJECTDIR}/lib/common
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/common/shapes.o lib/common/shapes.cc
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/common/shapes.o lib/common/shapes.cc
 
 ${OBJECTDIR}/lib/sweep/advancing_front.o: lib/sweep/advancing_front.cc
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/advancing_front.o lib/sweep/advancing_front.cc
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/advancing_front.o lib/sweep/advancing_front.cc
 
 ${OBJECTDIR}/lib/sweep/cdt.o: lib/sweep/cdt.cc
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/cdt.o lib/sweep/cdt.cc
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/cdt.o lib/sweep/cdt.cc
 
 ${OBJECTDIR}/lib/sweep/sweep.o: lib/sweep/sweep.cc
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep.o lib/sweep/sweep.cc
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep.o lib/sweep/sweep.cc
 
 ${OBJECTDIR}/lib/sweep/sweep_context.o: lib/sweep/sweep_context.cc
 	${MKDIR} -p ${OBJECTDIR}/lib/sweep
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep_context.o lib/sweep/sweep_context.cc
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/lib/sweep/sweep_context.o lib/sweep/sweep_context.cc
 
 ${OBJECTDIR}/src/coords.o: src/coords.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/coords.o src/coords.cpp
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/coords.o src/coords.cpp
 
 ${OBJECTDIR}/src/funnel.o: src/funnel.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/funnel.o src/funnel.cpp
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/funnel.o src/funnel.cpp
 
 ${OBJECTDIR}/src/lcpfinder.o: src/lcpfinder.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/lcpfinder.o src/lcpfinder.cpp
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/lcpfinder.o src/lcpfinder.cpp
 
 ${OBJECTDIR}/src/main.o: src/main.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -O3 -w -I/usr/include/gdal -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/main.o src/main.cpp
+	$(COMPILE.cc) -O3 -w -I/usr/include/gdal `pkg-config --cflags python-2.7` -std=c++14  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/main.o src/main.cpp
 
 # Subprojects
 .build-subprojects:
